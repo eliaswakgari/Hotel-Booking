@@ -10,7 +10,8 @@ const {
   updateHotel,
   deleteHotel,
   getAvailableRooms,
-  updateRoom,// Add this import
+  updateRoom,
+  addRoom,
 } = require('../controllers/hotelController');
 
 const handleUpload = upload.fields([
@@ -37,7 +38,8 @@ router.route('/:id')
 router.get('/rooms/available', getAvailableRooms); // NEW - All available rooms
 router.get('/:id/available-rooms', getAvailableRooms); // Existing - Available rooms for specific hotel
 
-// Individual room update route
+// Individual room routes
+router.post('/:hotelId/rooms', protect, admin, roomUpload, addRoom);
 router.put('/:hotelId/rooms/:roomId', protect, admin, roomUpload, updateRoom);
 
 module.exports = router;

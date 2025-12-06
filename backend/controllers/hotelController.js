@@ -2,8 +2,21 @@ const asyncHandler = require('express-async-handler');
 const Hotel = require('../models/Hotel');
 const mongoose = require('mongoose');
 const Booking = require('../models/Booking');
+const Review = require('../models/Review');
 const cloudinary = require('../config/cloudinary');
 const { getIO } = require('../socket');
+const redisClient = require('../config/redisClient');
+
+// Helper to clear cached hotel base data
+const clearHotelCache = async (hotelId) => {
+  if (!hotelId || !redisClient || !redisClient.isOpen) return;
+  const cacheKey = `hotel:${hotelId}:base`;
+  try {
+    await redisClient.del(cacheKey);
+  } catch (err) {
+    console.error('Error clearing hotel cache:', err.message);
+  }
+};
 
 // GET available rooms for specific dates
 exports.getAvailableRooms = asyncHandler(async (req, res) => {
@@ -201,6 +214,7 @@ const getAvailableRoomsCount = async (hotelId, checkIn, checkOut, guests) => {
     return 0;
   }
 };
+
 // CREATE Hotel (Admin) - FIXED to properly handle room images
 exports.createHotel = asyncHandler(async (req, res) => {
   const { description, amenities, location, rooms, pricingRules, name, basePrice, maxGuests, roomType } = req.body;
@@ -313,6 +327,7 @@ exports.createHotel = asyncHandler(async (req, res) => {
   });
 
   getIO().emit("hotelCreated", hotel);
+  await clearHotelCache(hotel._id);
   res.status(201).json(hotel);
 });
 
@@ -466,8 +481,74 @@ exports.updateHotel = asyncHandler(async (req, res) => {
 
   const io = getIO();
   io.emit("hotelUpdated", updatedHotel);
+  await clearHotelCache(updatedHotel._id);
 
   res.status(200).json(updatedHotel);
+});
+
+// CREATE individual room with images
+exports.addRoom = asyncHandler(async (req, res) => {
+  const { hotelId } = req.params;
+  const { number, type, status, price, maxGuests, description } = req.body;
+
+  const hotel = await Hotel.findById(hotelId);
+  if (!hotel) {
+    return res.status(404).json({ message: "Hotel not found" });
+  }
+
+  // Validate room number
+  if (!number) {
+    return res.status(400).json({ message: "Room number is required" });
+  }
+
+  // Check for duplicate room number
+  const existingRoom = hotel.rooms.find(r => r.number === number);
+  if (existingRoom) {
+    return res.status(400).json({ message: `Room number ${number} already exists` });
+  }
+
+  // Handle room image uploads - using 'images' field from multer
+  let uploadedImages = [];
+  if (req.files && req.files.images) {
+    for (const file of req.files.images) {
+      try {
+        const result = await cloudinary.uploader.upload(file.path, {
+          folder: `hotel-rooms/${hotelId}`
+        });
+        uploadedImages.push(result.secure_url);
+      } catch (uploadError) {
+        console.error('Error uploading room image to Cloudinary:', uploadError);
+      }
+    }
+  }
+
+  const newRoom = {
+    _id: new mongoose.Types.ObjectId(),
+    number,
+    type: type || 'Standard',
+    status: status || 'available',
+    price: price ? parseFloat(price) : hotel.basePrice,
+    maxGuests: maxGuests ? parseInt(maxGuests) : 2,
+    roomImages: uploadedImages,
+  };
+
+  hotel.rooms.push(newRoom);
+
+  if (description) {
+    hotel.description = description;
+  }
+
+  const updatedHotelWithRoom = await hotel.save();
+
+  const io2 = getIO();
+  io2.emit("hotelUpdated", updatedHotelWithRoom);
+  await clearHotelCache(updatedHotelWithRoom._id);
+
+  res.status(201).json({
+    message: "Room added successfully",
+    room: newRoom,
+    hotel: updatedHotelWithRoom
+  });
 });
 
 // UPDATE individual room with images
@@ -529,6 +610,7 @@ exports.updateRoom = asyncHandler(async (req, res) => {
 
   const io = getIO();
   io.emit("hotelUpdated", updatedHotel);
+  await clearHotelCache(updatedHotel._id);
 
   res.status(200).json({
     message: "Room updated successfully",
@@ -547,6 +629,7 @@ exports.deleteHotel = asyncHandler(async (req, res) => {
   await hotel.deleteOne();
 
   getIO().emit('hotelDeleted', { id: req.params.id });
+  await clearHotelCache(req.params.id);
 
   res.json({ message: 'Hotel deleted successfully' });
 });
@@ -554,6 +637,23 @@ exports.deleteHotel = asyncHandler(async (req, res) => {
 // GET hotel by ID
 exports.getHotelById = asyncHandler(async (req, res) => {
   const { checkIn, checkOut } = req.query;
+
+  const useCache = !checkIn && !checkOut;
+  const cacheKey = `hotel:${req.params.id}:base`;
+
+  // Try Redis cache first for base requests (no date filters)
+  if (useCache && redisClient && redisClient.isOpen) {
+    try {
+      const cached = await redisClient.get(cacheKey);
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        return res.json(parsed);
+      }
+    } catch (err) {
+      console.error('Error reading hotel from cache:', err.message);
+    }
+  }
+
   const hotel = await Hotel.findById(req.params.id);
   
   if (!hotel) {
@@ -579,6 +679,15 @@ exports.getHotelById = asyncHandler(async (req, res) => {
     hotel.rooms = roomsWithAvailability;
   } else if (!isAdmin) {
     hotel.rooms = hotel.rooms.filter(room => room.status === 'available');
+  }
+
+  // Store base response in Redis cache
+  if (useCache && redisClient && redisClient.isOpen) {
+    try {
+      await redisClient.set(cacheKey, JSON.stringify(hotel), { EX: 300 });
+    } catch (err) {
+      console.error('Error writing hotel to cache:', err.message);
+    }
   }
 
   res.json(hotel);
@@ -629,92 +738,78 @@ exports.fixDuplicateRoomIds = asyncHandler(async (req, res) => {
     res.status(500).json({ message: 'Error fixing duplicate room IDs', error: error.message });
   }
 });
-// hotelController.js - Add this function
+// hotelController.js - Unified available rooms function
 exports.getAvailableRooms = asyncHandler(async (req, res) => {
   const { checkIn, checkOut, roomType, guests } = req.query;
 
+  // Optional hotel restriction (for /:id/available-rooms)
+  const hotelIdParam = req.params.id || null;
+
   try {
-    // If no dates provided, show all available rooms
+    // If no dates provided, show rooms that are marked available AND have no
+    // overlapping pending/confirmed bookings for the current period.
     if (!checkIn || !checkOut) {
-      const hotels = await Hotel.find({})
+      // Determine which hotels to search: all or a specific one
+      const hotelQuery = hotelIdParam ? { _id: hotelIdParam } : {};
+
+      const hotels = await Hotel.find(hotelQuery)
         .populate({
           path: 'reviews.user',
           select: 'name profileImage'
         });
 
       const availableRooms = [];
-      
-      hotels.forEach(hotel => {
-        hotel.rooms.forEach(room => {
-          if (room.status === 'available') {
-            availableRooms.push({
-              hotel: {
-                _id: hotel._id,
-                name: hotel.name,
-                description: hotel.description,
-                basePrice: hotel.basePrice,
-                location: hotel.location,
-                amenities: hotel.amenities,
-                images: hotel.images,
-                reviews: hotel.reviews,
-                averageRating: hotel.averageRating
-              },
-              room: {
-                _id: room._id,
-                number: room.number,
-                type: room.type,
-                status: room.status,
-                price: room.price || hotel.basePrice,
-                maxGuests: room.maxGuests || 2,
-                roomImages: room.roomImages || []
-              }
-            });
-          }
+
+      // Compute per-room rating stats for these hotels
+      const hotelIds = hotels.map((h) => h._id);
+      const roomRatingsAgg = await Review.aggregate([
+        { $match: { hotel: { $in: hotelIds } } },
+        {
+          $group: {
+            _id: { hotel: '$hotel', roomNumber: '$roomNumber' },
+            averageRating: { $avg: '$rating' },
+            totalReviews: { $sum: 1 },
+          },
+        },
+      ]);
+
+      const roomRatingMap = new Map();
+      roomRatingsAgg.forEach((entry) => {
+        const hotelIdStr = entry._id.hotel.toString();
+        const roomNumber = entry._id.roomNumber || '';
+        const key = `${hotelIdStr}-${roomNumber}`;
+        roomRatingMap.set(key, {
+          averageRating: entry.averageRating,
+          totalReviews: entry.totalReviews,
         });
       });
 
-      return res.json({
-        availableRooms,
-        totalRooms: availableRooms.length,
-        message: 'All available rooms'
-      });
-    }
+      // Define a default date window: today -> 1 year from now
+      const today = new Date();
+      const oneYearLater = new Date(today);
+      oneYearLater.setFullYear(oneYearLater.getFullYear() + 1);
 
-    // If dates provided, check availability
-    const checkInDate = new Date(checkIn);
-    const checkOutDate = new Date(checkOut);
-    
-    if (checkInDate >= checkOutDate) {
-      return res.status(400).json({ message: "Check-out date must be after check-in date" });
-    }
+      const todayISO = today.toISOString().split('T')[0];
+      const oneYearLaterISO = oneYearLater.toISOString().split('T')[0];
 
-    if (checkInDate < new Date().setHours(0, 0, 0, 0)) {
-      return res.status(400).json({ message: "Check-in date cannot be in the past" });
-    }
+      for (const hotel of hotels) {
+        for (const room of hotel.rooms) {
+          // Only consider rooms explicitly marked as available
+          if (room.status !== 'available') continue;
 
-    const hotels = await Hotel.find({})
-      .populate({
-        path: 'reviews.user',
-        select: 'name profileImage'
-      });
+          // Check that there are no overlapping pending/confirmed bookings
+          const isAvailable = await checkRoomAvailability(
+            hotel._id,
+            room.number,
+            todayISO,
+            oneYearLaterISO
+          );
 
-    const availableRooms = [];
-    
-    for (const hotel of hotels) {
-      for (const room of hotel.rooms) {
-        // Skip if room is not available
-        if (room.status !== 'available') continue;
-        
-        // Skip if room type doesn't match filter
-        if (roomType && roomType !== 'All' && room.type !== roomType) continue;
-        
-        // Skip if room doesn't have enough capacity
-        if (guests && room.maxGuests < parseInt(guests)) continue;
-        
-        // Check booking availability for the dates
-        const isAvailable = await checkRoomAvailability(hotel._id, room.number, checkIn, checkOut);
-        
-        if (isAvailable) {
+          if (!isAvailable) continue;
+
+          const ratingKey = `${hotel._id.toString()}-${room.number}`;
+          const ratingInfo = roomRatingMap.get(ratingKey) || null;
+
           availableRooms.push({
             hotel: {
               _id: hotel._id,
@@ -734,10 +829,119 @@ exports.getAvailableRooms = asyncHandler(async (req, res) => {
               status: room.status,
               price: room.price || hotel.basePrice,
               maxGuests: room.maxGuests || 2,
-              roomImages: room.roomImages || []
+              roomImages: room.roomImages || [],
+              averageRating: ratingInfo ? ratingInfo.averageRating : 0,
+              totalReviews: ratingInfo ? ratingInfo.totalReviews : 0,
             }
           });
         }
+      }
+
+      return res.json({
+        availableRooms,
+        totalRooms: availableRooms.length,
+        message: 'All available rooms',
+        filters: {
+          roomType: roomType || 'All',
+          guests: guests || 'Any'
+        }
+      });
+    }
+
+    // If dates provided, check availability within that range
+    const checkInDate = new Date(checkIn);
+    const checkOutDate = new Date(checkOut);
+
+    if (checkInDate >= checkOutDate) {
+      return res.status(400).json({ message: "Check-out date must be after check-in date" });
+    }
+
+    if (checkInDate < new Date().setHours(0, 0, 0, 0)) {
+      return res.status(400).json({ message: "Check-in date cannot be in the past" });
+    }
+
+    const hotelQuery = hotelIdParam ? { _id: hotelIdParam } : {};
+
+    const hotels = await Hotel.find(hotelQuery)
+      .populate({
+        path: 'reviews.user',
+        select: 'name profileImage'
+      });
+
+    const availableRooms = [];
+
+    // Compute per-room rating stats for these hotels
+    const hotelIds = hotels.map((h) => h._id);
+    const roomRatingsAgg = await Review.aggregate([
+      { $match: { hotel: { $in: hotelIds } } },
+      {
+        $group: {
+          _id: { hotel: '$hotel', roomNumber: '$roomNumber' },
+          averageRating: { $avg: '$rating' },
+          totalReviews: { $sum: 1 },
+        },
+      },
+    ]);
+
+    const roomRatingMap = new Map();
+    roomRatingsAgg.forEach((entry) => {
+      const hotelIdStr = entry._id.hotel.toString();
+      const roomNumber = entry._id.roomNumber || '';
+      const key = `${hotelIdStr}-${roomNumber}`;
+      roomRatingMap.set(key, {
+        averageRating: entry.averageRating,
+        totalReviews: entry.totalReviews,
+      });
+    });
+
+    for (const hotel of hotels) {
+      for (const room of hotel.rooms) {
+        // Skip if room is not available by status
+        if (room.status !== 'available') continue;
+
+        // Skip if room type doesn't match filter
+        if (roomType && roomType !== 'All' && room.type !== roomType) continue;
+
+        // Skip if room doesn't have enough capacity
+        if (guests && room.maxGuests < parseInt(guests)) continue;
+
+        // Check booking availability for the requested dates
+        const isAvailable = await checkRoomAvailability(
+          hotel._id,
+          room.number,
+          checkIn,
+          checkOut
+        );
+
+        if (!isAvailable) continue;
+
+        const ratingKey = `${hotel._id.toString()}-${room.number}`;
+        const ratingInfo = roomRatingMap.get(ratingKey) || null;
+
+        availableRooms.push({
+          hotel: {
+            _id: hotel._id,
+            name: hotel.name,
+            description: hotel.description,
+            basePrice: hotel.basePrice,
+            location: hotel.location,
+            amenities: hotel.amenities,
+            images: hotel.images,
+            reviews: hotel.reviews,
+            averageRating: hotel.averageRating
+          },
+          room: {
+            _id: room._id,
+            number: room.number,
+            type: room.type,
+            status: room.status,
+            price: room.price || hotel.basePrice,
+            maxGuests: room.maxGuests || 2,
+            roomImages: room.roomImages || [],
+            averageRating: ratingInfo ? ratingInfo.averageRating : 0,
+            totalReviews: ratingInfo ? ratingInfo.totalReviews : 0,
+          }
+        });
       }
     }
 

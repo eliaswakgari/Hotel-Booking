@@ -14,7 +14,7 @@ const Header = () => {
   const navigate = useNavigate();
   const { user } = useSelector((state) => state.auth);
   const { notifications, unreadCount } = useSelector((state) => state.notification);
-  
+
   const [menuOpen, setMenuOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [notificationDropdownOpen, setNotificationDropdownOpen] = useState(false);
@@ -40,7 +40,7 @@ const Header = () => {
       withCredentials: true,
       transports: ['websocket', 'polling']
     });
-    
+
     setSocket(newSocket);
 
     // Join user's personal room for notifications
@@ -57,7 +57,7 @@ const Header = () => {
     newSocket.on('newNotification', (notification) => {
       console.log('📢 New notification received:', notification);
       dispatch(fetchNotifications()); // Refresh notifications
-      
+
       // Show toast for unread notifications that belong to this user
       if (notification.recipient === user._id || (user.role === 'admin' && notification.type === 'refund_requested')) {
         toast.info(`🔔 ${notification.title}: ${notification.message}`, {
@@ -112,7 +112,7 @@ const Header = () => {
     if (!user?.name) return "U";
     const nameParts = user.name.split(' ');
     if (nameParts.length >= 2) {
-      return `${nameParts[0][0]}${nameParts[nameParts.length-1][0]}`.toUpperCase();
+      return `${nameParts[0][0]}${nameParts[nameParts.length - 1][0]}`.toUpperCase();
     }
     return user.name.substring(0, 2).toUpperCase();
   };
@@ -123,16 +123,16 @@ const Header = () => {
       if (!notification.read) {
         await dispatch(markAsRead(notification._id)).unwrap();
       }
-      
+
       // Navigate based on user role and notification type
       if (user.role === 'admin' && notification.booking) {
         // For admins with booking-related notifications, go to booking details
-            navigate(`/admin/notifications/${notification._id}`);
+        navigate(`/admin/notifications/${notification._id}`);
       } else {
         // Otherwise go to notification details
         navigate(`/admin/notifications/${notification._id}`);
       }
-      
+
       setNotificationDropdownOpen(false);
     } catch (error) {
       console.error('Error handling notification click:', error);
@@ -166,9 +166,7 @@ const Header = () => {
     }
   };
 
-  const navLinks = [
-    { name: "Contact", to: "/contact", icon: <FaEnvelope className="inline mr-2" /> },
-  ];
+  const navLinks = [];
 
   if (user?.role === "admin") {
     navLinks.push({
@@ -235,7 +233,7 @@ const Header = () => {
 
           {/* Notification Bell - Only for logged-in users */}
           {user && (
-            <div 
+            <div
               className="relative"
               onMouseEnter={() => setNotificationDropdownOpen(true)}
               onMouseLeave={() => setNotificationDropdownOpen(false)}
@@ -291,9 +289,8 @@ const Header = () => {
                         displayedNotifications.map((notification) => (
                           <div
                             key={notification._id}
-                            className={`p-4 border-b border-gray-100 cursor-pointer hover:bg-gray-50 transition group ${
-                              !notification.read ? 'bg-blue-50 border-l-4 border-l-blue-500' : ''
-                            }`}
+                            className={`p-4 border-b border-gray-100 cursor-pointer hover:bg-gray-50 transition group ${!notification.read ? 'bg-blue-50 border-l-4 border-l-blue-500' : ''
+                              }`}
                             onClick={() => handleNotificationClick(notification)}
                           >
                             <div className="flex justify-between items-start">
@@ -303,9 +300,8 @@ const Header = () => {
                                 </div>
                                 <div className="flex-1 min-w-0">
                                   <div className="flex items-center gap-2 mb-1">
-                                    <p className={`font-medium text-sm truncate ${
-                                      !notification.read ? 'text-blue-900' : 'text-gray-900'
-                                    }`}>
+                                    <p className={`font-medium text-sm truncate ${!notification.read ? 'text-blue-900' : 'text-gray-900'
+                                      }`}>
                                       {notification.title}
                                     </p>
                                     {!notification.read && (

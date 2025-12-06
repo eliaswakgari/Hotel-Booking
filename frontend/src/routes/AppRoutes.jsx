@@ -59,7 +59,7 @@ const BookingsManagement = lazy(() => import("../pages/admin/BookingsManagement"
 const AdminAnalytics = lazy(() => import("../pages/admin/analytics/AdminAnalytics"));
 const Settings = lazy(() => import("../pages/admin/Settings"));
 const PricingRules = lazy(() => import("../pages/admin/PricingRules"));
-const AuditDashboard = lazy(() => import("../pages/admin/AuditDashboard")); 
+const AuditDashboard = lazy(() => import("../pages/admin/AuditDashboard"));
 const GuestLayout = lazy(() => import("../layouts/GuestLayout"));
 const AdminLayout = lazy(() => import("../layouts/AdminLayout"));
 import ChatbotPage from "../pages/ChatbotPage";
@@ -77,11 +77,10 @@ const Loader = () => {
   return (
     <div className="flex items-center justify-center min-h-screen">
       <motion.div
-        className={`w-16 h-16 rounded-full border-4 border-t-4 ${
-          darkMode
-            ? "border-gray-200 border-t-blue-500"
-            : "border-blue-500 border-t-white"
-        }`}
+        className={`w-16 h-16 rounded-full border-4 border-t-4 ${darkMode
+          ? "border-gray-200 border-t-blue-500"
+          : "border-blue-500 border-t-white"
+          }`}
         animate={{ rotate: 360 }}
         transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
       />
@@ -102,9 +101,9 @@ const AppRoutes = () => {
         await dispatch(fetchProfile()).unwrap();
       } catch (err) {
         // Silently handle auth errors - don't show them in console
-        if (err?.message?.includes('Admin access only') || 
-            err?.message?.includes('Authentication') ||
-            err?.message?.includes('Unauthorized')) {
+        if (err?.message?.includes('Admin access only') ||
+          err?.message?.includes('Authentication') ||
+          err?.message?.includes('Unauthorized')) {
           // This is normal for unauthenticated users
           console.log('User not authenticated - this is normal for public access');
         } else {
@@ -153,6 +152,7 @@ const AppRoutes = () => {
         <Routes>
           {/* 🌍 Public Routes */}
           <Route path="/" element={<Home />} />
+          <Route path="/hotels" element={<Navigate to="/" replace />} />
           <Route path="/hotel/:id" element={<HotelDetail />} />
 
           {/* 🔑 Auth Routes */}
@@ -198,13 +198,13 @@ const AppRoutes = () => {
           />
 
           {/* 🔔 Admin Notifications */}
-          <Route 
-            path="/admin/notifications" 
+          <Route
+            path="/admin/notifications"
             element={
               <AdminRoute>
                 <Notifications />
               </AdminRoute>
-            } 
+            }
           />
           <Route
             path="/admin/notifications/:id"
@@ -219,19 +219,19 @@ const AppRoutes = () => {
           <Route
             path="/guest"
             element={
-              <GuestRoute> 
-                <AdminLayout>         
+              <GuestRoute>
+                <GuestLayout>
                   <GuestDashboard />
-                </AdminLayout>
+                </GuestLayout>
               </GuestRoute>
             }
           />
-          
+
           <Route
             path="/guest/bookings"
             element={
               <GuestRoute>
-                <BookingHistory />               
+                <BookingHistory />
               </GuestRoute>
             }
           />

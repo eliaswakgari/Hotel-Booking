@@ -167,7 +167,9 @@ exports.createBooking = asyncHandler(async (req, res) => {
       roomNumber: finalRoomNumber, // Use the final room number
       totalPrice: parseFloat(totalPrice),
       paymentIntentId,
-      status: 'confirmed'
+      // Start as pending so admin can approve and mark payment as succeeded
+      status: 'pending',
+      paymentStatus: 'pending'
     });
 
     // Populate booking data for response
@@ -476,6 +478,9 @@ exports.checkAvailability = asyncHandler(async (req, res) => {
 // ======================
 // ✅ CREATE PAYMENT INTENT
 // ======================
+// ======================
+// ✅ CREATE PAYMENT INTENT
+// ======================
 exports.createPaymentIntent = asyncHandler(async (req, res) => {
   const { 
     hotelId, 
@@ -488,7 +493,6 @@ exports.createPaymentIntent = asyncHandler(async (req, res) => {
     totalPrice 
   } = req.body;
 
-  // Validate required fields
   if (!hotelId || !checkIn || !checkOut || !adults || !roomType || !roomNumber) {
     return res.status(400).json({ 
       message: "Missing required booking details" 
@@ -499,10 +503,15 @@ exports.createPaymentIntent = asyncHandler(async (req, res) => {
     const hotel = await Hotel.findById(hotelId);
     if (!hotel) return res.status(404).json({ message: "Hotel not found" });
 
-    // Verify the room exists and matches the type
-    const room = hotel.rooms.find(r => r.number === roomNumber && r.type === roomType);
+    const room = hotel.rooms.find(r => 
+      r.number === roomNumber && 
+      r.type === roomType
+    );
+
     if (!room) {
-      return res.status(400).json({ message: "Selected room not found or room type mismatch" });
+      return res.status(400).json({ 
+        message: "Selected room not found or room type mismatch" 
+      });
     }
 
     // Check room availability
@@ -513,49 +522,41 @@ exports.createPaymentIntent = asyncHandler(async (req, res) => {
     }
 
     // Calculate total price
-    const calculatedPrice = calculateTotalPrice(hotel, checkIn, checkOut, adults, children, roomType);
+    const calculatedPrice = calculateTotalPrice(
+      hotel, 
+      checkIn, 
+      checkOut, 
+      adults, 
+      children,
+      roomType
+    );
+
     const finalPrice = totalPrice || calculatedPrice;
 
-    // Create payment intent with Stripe
+    // Create payment intent
     const paymentIntent = await stripe.paymentIntents.create({
-      amount: Math.round(finalPrice * 100), // Convert to cents
+      amount: Math.round(finalPrice * 100),
       currency: 'usd',
       metadata: {
-        hotelId: hotelId,
-        checkIn: checkIn,
-        checkOut: checkOut,
-        adults: adults,
-        children: children || 0,
-        roomType: roomType,
-        roomNumber: roomNumber
-      },
-      automatic_payment_methods: {
-        enabled: true,
-      },
+        hotelId,
+        checkIn,
+        checkOut,
+        adults,
+        children
+      }
     });
 
     res.json({
       clientSecret: paymentIntent.client_secret,
-      paymentIntentId: paymentIntent.id,
-      totalPrice: finalPrice
+      finalPrice
     });
+
   } catch (error) {
-    console.error("Payment intent creation error:", error);
-    
-    if (error.message.includes('already booked') || 
-        error.message.includes('Check-in date') || 
-        error.message.includes('Check-out date')) {
-      return res.status(400).json({ message: error.message });
-    }
-    
-    res.status(500).json({ 
-      message: "Error creating payment intent", 
-      error: error.message 
-    });
+    console.error("Payment intent error:", error);
+    res.status(400).json({ message: error.message });
   }
 });
 
-// ======================
 // ✅ REQUEST REFUND - FIXED (Single definition)
 // ======================
 exports.requestRefund = asyncHandler(async (req, res) => {
@@ -571,6 +572,35 @@ exports.requestRefund = asyncHandler(async (req, res) => {
     // Check if user owns the booking
     if (booking.user._id.toString() !== req.user._id.toString()) {
       return res.status(403).json({ message: "Not authorized" });
+    }
+
+    // Prevent refund requests on unpaid / already refunded / already requested bookings
+    if (booking.paymentStatus !== 'succeeded') {
+      return res.status(400).json({
+        message: 'Refunds can only be requested for successfully paid bookings',
+      });
+    }
+
+    // If a refund is already fully processed
+    if (booking.refundStatus === 'completed' || booking.status === 'refunded') {
+      return res.status(400).json({
+        message: 'This booking has already been fully refunded and cannot be refunded again',
+      });
+    }
+
+    // If a partial refund or any amount has already been processed
+    if (booking.refundStatus === 'partial' || booking.refundedAmount > 0) {
+      return res.status(400).json({
+        message:
+          'A refund has already been processed for this booking. Further adjustments must be handled by the hotel/admin.',
+      });
+    }
+
+    // If there is already a pending refund request
+    if (booking.refundStatus === 'requested') {
+      return res.status(400).json({
+        message: 'There is already a pending refund request for this booking',
+      });
     }
 
     // Update booking with refund request

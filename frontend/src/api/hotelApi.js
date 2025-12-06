@@ -27,11 +27,15 @@ export const updateHotel = (id, formData) => API.put(`/hotels/${id}`, formData, 
   headers: { 'Content-Type': 'multipart/form-data' }
 });
 export const updateRoom = (hotelId, roomId, formData) => {
-  const url = roomId === "new" 
-    ? `/hotels/${hotelId}/rooms`
-    : `/hotels/${hotelId}/rooms/${roomId}`;
-  
-  return API.post(url, formData, {
+  if (roomId === "new") {
+    // Create a new room
+    return API.post(`/hotels/${hotelId}/rooms`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+  }
+
+  // Update existing room
+  return API.put(`/hotels/${hotelId}/rooms/${roomId}`, formData, {
     headers: { 'Content-Type': 'multipart/form-data' }
   });
 };

@@ -81,14 +81,9 @@ export const requestRefundApi = (id, data) => {
   console.log('📞 Requesting refund:', { id, data });
   return API.post(`/bookings/${id}/request-refund`, data);
 };
-// api/bookingApi.js - Fix the getBookingDetails function
-export const getBookingDetails = async (bookingId) => {
-  try {
-    console.log('📞 Fetching booking details:', bookingId);
-    const response = await API.get(`/bookings/${bookingId}`);
-    return response.data; // ✅ This already returns the data, not response with data property
-  } catch (error) {
-    console.error('Get booking details API error:', error);
-    throw error;
-  }
+
+// ✅ Get booking details (return full Axios response like other helpers)
+export const getBookingDetails = (bookingId) => {
+  console.log('📞 Fetching booking details:', bookingId);
+  return API.get(`/bookings/${bookingId}`);
 };

@@ -11,6 +11,10 @@ const roomSchema = new mongoose.Schema({
     enum: ['Standard', 'Deluxe', 'Suite', 'Premium','Executive','Accessible','Presidential','Honeymoon', 'Family'],
     default: 'Standard'
   },
+  description: {
+    type: String,
+    default: ''
+  },
   status: {
     type: String,
     required: true,
@@ -22,6 +26,9 @@ const roomSchema = new mongoose.Schema({
     default: 0
   },
   roomImages: [{
+    type: String
+  }],
+  amenities: [{
     type: String
   }],
   maxGuests: {
@@ -75,6 +82,16 @@ const hotelSchema = new mongoose.Schema({
         type: Number,
         default: null
       }
+    }
+  },
+  contact: {
+    phone: {
+      type: String,
+      default: ""
+    },
+    email: {
+      type: String,
+      default: ""
     }
   },
   rooms: [roomSchema],

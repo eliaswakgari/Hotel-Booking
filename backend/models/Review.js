@@ -12,6 +12,10 @@ const reviewSchema = new mongoose.Schema({
     ref: 'Hotel',
     required: true
   },
+  roomNumber: {
+    type: String,
+    required: false
+  },
   rating: {
     type: Number,
     required: true,
@@ -33,7 +37,27 @@ const reviewSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Compound index to ensure one review per user per hotel
-reviewSchema.index({ user: 1, hotel: 1 }, { unique: true });
+// Compound index to ensure one review per user per hotel per room
+// When roomNumber is null/undefined, this effectively stays hotel-level
+reviewSchema.index({ user: 1, hotel: 1, roomNumber: 1 }, { unique: true });
 
-module.exports = mongoose.model('Review', reviewSchema);
+const Review = mongoose.model('Review', reviewSchema);
+
+// On startup, automatically drop the legacy unique index (user_1_hotel_1)
+// that was created before roomNumber was added. This prevents duplicate-key
+// errors like E11000 on { user, hotel } when trying to review multiple rooms.
+mongoose.connection.once('open', async () => {
+  try {
+    const indexes = await Review.collection.indexes();
+    const legacyIndex = indexes.find((idx) => idx.name === 'user_1_hotel_1');
+
+    if (legacyIndex) {
+      await Review.collection.dropIndex('user_1_hotel_1');
+      console.log('Dropped legacy Review index user_1_hotel_1');
+    }
+  } catch (err) {
+    console.error('Error checking/dropping legacy Review index:', err.message);
+  }
+});
+
+module.exports = Review;

@@ -1,7 +1,6 @@
 // features/booking/bookingSlice.js
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import * as api from '../../api/bookingApi';
-
 // ✅ ADD: Fetch booking by ID
 export const fetchBookingById = createAsyncThunk(
   'bookings/fetchBookingById',

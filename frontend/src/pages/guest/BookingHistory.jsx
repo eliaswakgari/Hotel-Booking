@@ -132,8 +132,8 @@ const BookingHistory = () => {
         ) : bookings.length === 0 ? (
           <div className="text-center py-12">
             <p className="text-gray-500 text-lg mb-4">You have no bookings yet.</p>
-            <a href="/hotels" className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg">
-              Browse Hotels
+            <a href="/" className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg">
+              Browse Rooms
             </a>
           </div>
         ) : (
@@ -153,24 +153,23 @@ const BookingHistory = () => {
                     <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
                       {booking.hotel?.name}
                     </h3>
-                    <span className={`px-2 py-1 rounded text-xs font-medium ${
-                      booking.status === 'confirmed' ? 'bg-green-100 text-green-800' :
-                      booking.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                      booking.status === 'cancelled' ? 'bg-red-100 text-red-800' :
-                      'bg-gray-100 text-gray-800'
-                    }`}>
+                    <span className={`px-2 py-1 rounded text-xs font-medium ${booking.status === 'confirmed' ? 'bg-green-100 text-green-800' :
+                        booking.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                          booking.status === 'cancelled' ? 'bg-red-100 text-red-800' :
+                            'bg-gray-100 text-gray-800'
+                      }`}>
                       {booking.status?.toUpperCase()}
                     </span>
                   </div>
-                  
+
                   <p className="text-gray-600 dark:text-gray-300 text-sm mb-2">
                     📅 {new Date(booking.checkIn).toLocaleDateString()} - {new Date(booking.checkOut).toLocaleDateString()}
                   </p>
-                  
+
                   <p className="text-gray-600 dark:text-gray-300 text-sm mb-2">
                     🏨 Room {booking.roomNumber} • {booking.roomType}
                   </p>
-                  
+
                   <p className="text-gray-600 dark:text-gray-300 text-sm mb-2">
                     👥 {booking.adults} adults {booking.children ? `, ${booking.children} children` : ''}
                   </p>
@@ -179,11 +178,10 @@ const BookingHistory = () => {
                     <span className="text-xl font-bold text-gray-900 dark:text-white">
                       ${booking.totalPrice}
                     </span>
-                    <span className={`text-sm font-medium ${
-                      booking.paymentStatus === 'succeeded' ? 'text-green-600' : 
-                      booking.paymentStatus === 'pending' ? 'text-yellow-600' : 
-                      'text-red-600'
-                    }`}>
+                    <span className={`text-sm font-medium ${booking.paymentStatus === 'succeeded' ? 'text-green-600' :
+                        booking.paymentStatus === 'pending' ? 'text-yellow-600' :
+                          'text-red-600'
+                      }`}>
                       {booking.paymentStatus?.toUpperCase()}
                     </span>
                   </div>
