@@ -12,10 +12,10 @@ const Footer = () => {
       whileInView={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.8, ease: "easeOut" }}
       viewport={{ once: true }}
-      className="bg-gray-900 text-gray-200 mt-auto w-full h-[60vh] flex flex-col justify-between"
+      className="bg-gray-900 text-gray-200 mt-auto w-full flex flex-col"
     >
-      <div className="max-w-7xl mx-auto px-6 py-8 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 flex-1">
-        
+      <div className="max-w-7xl mx-auto px-6 py-10 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8 w-full">
+
         {/* Branding */}
         <div className="flex flex-col gap-2">
           <h2 className="text-2xl font-bold text-white">Hotel Booking</h2>
@@ -75,7 +75,7 @@ const Footer = () => {
       </div>
 
       {/* Bottom Section */}
-      <div className="border-t border-gray-800 mt-4 pt-4 flex flex-col md:flex-row justify-between items-center px-6 gap-4 md:gap-0">
+      <div className="border-t border-gray-800 mt-4 py-4 flex flex-col md:flex-row justify-between items-center px-6 gap-4 md:gap-0 w-full">
         <p className="text-gray-500 text-sm text-center md:text-left">
           &copy; {new Date().getFullYear()} Hotel Booking. All rights reserved.
         </p>

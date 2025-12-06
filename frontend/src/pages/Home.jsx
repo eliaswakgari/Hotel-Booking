@@ -291,7 +291,7 @@ const Home = () => {
             transition={{ delay: 0.4 }}
             className="w-full max-w-3xl"
           >
-            <div className="bg-white/95 backdrop-blur-sm rounded-full shadow-xl border border-white/60 px-3 py-2 flex flex-col md:flex-row items-stretch md:items-center gap-2 md:gap-0">
+            <div className="bg-white/95 backdrop-blur-sm rounded-2xl md:rounded-full shadow-xl border border-white/60 px-3 py-3 flex flex-col md:flex-row items-stretch md:items-center gap-3 md:gap-0">
               <div className="flex-1 flex items-center gap-2 px-3 py-2 rounded-full hover:bg-gray-50 transition">
                 <FaMapMarkerAlt className="text-gray-500" />
                 <div className="flex flex-col items-start w-full">
@@ -301,7 +301,7 @@ const Home = () => {
                     placeholder="Search destinations, hotels, or rooms"
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
-                    className="w-full bg-transparent text-sm text-white placeholder:text-gray-300 focus:outline-none"
+                    className="w-full bg-transparent text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none"
                   />
                 </div>
               </div>
@@ -326,7 +326,7 @@ const Home = () => {
                 </div>
               </div>
 
-              <div className="mt-1 md:mt-0 flex justify-end">
+              <div className="mt-2 md:mt-0 flex justify-end">
                 <button
                   className="inline-flex items-center justify-center bg-blue-600 hover:bg-blue-700 text-white rounded-full px-5 py-2.5 text-sm font-semibold shadow-md transition"
                 >
@@ -588,14 +588,15 @@ const Home = () => {
       <section className="max-w-7xl mx-auto px-4 mt-16">
         <div className="bg-white rounded-3xl shadow-2xl overflow-hidden border border-gray-100 flex flex-col md:flex-row items-stretch">
           <div className="md:w-2/3 w-full h-56 md:h-80 bg-black">
-            <video
-              className="w-full h-full object-cover"
-              src="https://www.youtube.com/watch?v=qemqQHaeCYo"
-              autoPlay
-              muted
-              loop
-              playsInline
-            />
+            <div className="w-full h-full">
+              <iframe
+                className="w-full h-full"
+                src="https://www.youtube.com/embed/qemqQHaeCYo?autoplay=1&mute=1&loop=1&playlist=qemqQHaeCYo"
+                title="Room preview video"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allowFullScreen
+              />
+            </div>
           </div>
           <div className="md:w-1/3 w-full p-6 md:p-8 flex flex-col justify-center bg-gradient-to-br from-blue-50 to-white">
             <h3 className="text-2xl font-bold text-gray-800 mb-2">Experience the Room in 4K</h3>
