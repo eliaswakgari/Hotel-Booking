@@ -34,28 +34,6 @@ export const issueRefund = createAsyncThunk('bookings/issueRefund', async ({ id,
   return res.data;
 });
 
-export const fetchHotels = createAsyncThunk('hotel/fetchHotels', async (_, { rejectWithValue }) => {
-  try { 
-    const res = await api.fetchHotels(); 
-    return res.data; 
-  }
-  catch (err) { 
-    // Improved error handling
-    const errorMessage = err.response?.data?.message || err.message || 'Failed to fetch hotels';
-    
-    // Handle specific error cases
-    if (err.response?.status === 403) {
-      return rejectWithValue('Access denied. Please contact administrator.');
-    } else if (err.response?.status === 401) {
-      return rejectWithValue('Authentication required.');
-    } else if (err.response?.status === 404) {
-      return rejectWithValue('Hotels not found.');
-    }
-    
-    return rejectWithValue(errorMessage);
-  }
-});
-
 // ... rest of your slice code remains the same
 
 const initialState = { 
