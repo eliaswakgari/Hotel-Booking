@@ -16,11 +16,13 @@ const {
   loginValidator, 
   changePasswordValidator,
   resetPasswordValidator,
-  updateProfileValidator  // ✅ Import the new validator
+  updateProfileValidator  // Import the new validator
 } = require('../utils/validators');
 const { protect } = require('../middleware/authMiddleware');
 const { upload } = require('../middleware/uploadMiddleware');
 const generateToken = require('../utils/generateToken');
+
+const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:5173';
 
 // Auth routes
 router.post('/register', registerValidator, registerUser);
@@ -29,7 +31,7 @@ router.post('/logout', logoutUser);
 
 // Profile routes
 router.get('/profile', protect, getProfile);
-router.put("/profile", protect, updateProfileValidator, updateProfile); // ✅ Add validation
+router.put("/profile", protect, updateProfileValidator, updateProfile); // Add validation
 router.put('/change-password', protect, changePasswordValidator, changePassword);
 
 // Forgot / Reset password
@@ -63,7 +65,7 @@ router.get('/google/callback',
     res.send(`
       <script>
         const user = ${JSON.stringify(req.user.toObject ? req.user.toObject() : req.user)};
-        window.opener.postMessage({ user, token: "${token}" }, "http://localhost:5173");
+        window.opener.postMessage({ user, token: "${token}" }, "${CLIENT_URL}");
         window.close();
       </script>
     `);

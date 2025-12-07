@@ -5,6 +5,13 @@ const generateToken = require('../utils/generateToken');
 const crypto = require('crypto');
 const sendEmail = require('../utils/sendEmail');
 
+const isProduction = process.env.NODE_ENV === 'production';
+
+const authCookieOptions = {
+  httpOnly: true,
+  secure: isProduction, // required for cross-site cookies over HTTPS
+  sameSite: isProduction ? 'none' : 'lax', // allow Vercel -> Render
+};
 
 // ---------------- REGISTER ----------------
 exports.registerUser = asyncHandler(async (req, res) => {
@@ -44,11 +51,7 @@ exports.registerUser = asyncHandler(async (req, res) => {
   });
 
   const token = generateToken(user);
-  res.cookie("token", token, {
-    httpOnly: true,
-    secure: false,
-    sameSite: "lax",
-  });
+  res.cookie("token", token, authCookieOptions);
 
   res.status(201).json({
     success: true,
@@ -102,11 +105,7 @@ exports.loginUser = asyncHandler(async (req, res) => {
   }
 
   const token = generateToken(user);
-  res.cookie("token", token, {
-    httpOnly: true,
-    secure: false,
-    sameSite: "lax",
-  });
+  res.cookie("token", token, authCookieOptions);
 
   res.json({
     success: true,
@@ -183,7 +182,10 @@ exports.updateProfile = asyncHandler(async (req, res) => {
 
 // ---------------- LOGOUT ----------------
 exports.logoutUser = asyncHandler(async (req, res) => {
-  res.cookie('token', '', { httpOnly: true, expires: new Date(0) });
+  res.cookie('token', '', {
+    ...authCookieOptions,
+    expires: new Date(0),
+  });
   res.json({ 
     success: true,
     message: 'Logged out successfully' 
@@ -393,7 +395,7 @@ exports.resetPassword = asyncHandler(async (req, res) => {
   await user.save();
 
   const token = generateToken(user);
-  res.cookie('token', token, { httpOnly: true });
+  res.cookie('token', token, authCookieOptions);
   
   res.json({ 
     success: true,
