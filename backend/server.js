@@ -35,7 +35,7 @@ app.use(cors({
   origin: [
     process.env.CLIENT_URL,
     "http://localhost:5173",
-    "https://hotel-booking-3.vercel.app",
+    "https://hotel-booking-blue.vercel.app",
     /\.vercel\.app$/
   ],
   credentials: true,
