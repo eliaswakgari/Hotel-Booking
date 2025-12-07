@@ -60,8 +60,8 @@ const AdminAnalytics = lazy(() => import("../pages/admin/analytics/AdminAnalytic
 const Settings = lazy(() => import("../pages/admin/Settings"));
 const PricingRules = lazy(() => import("../pages/admin/PricingRules"));
 const AuditDashboard = lazy(() => import("../pages/admin/AuditDashboard"));
-const GuestLayout = lazy(() => import("../layouts/GuestLayout"));
-const AdminLayout = lazy(() => import("../layouts/AdminLayout"));
+import GuestLayout from "../layouts/GuestLayout";
+import AdminLayout from "../layouts/AdminLayout";
 import ChatbotPage from "../pages/ChatbotPage";
 import NotificationDetails from "../pages/admin/NotificationDetails";
 import BookingDetails from "../pages/admin/BookingDetails";

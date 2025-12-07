@@ -22,7 +22,7 @@ const { protect } = require('../middleware/authMiddleware');
 const { upload } = require('../middleware/uploadMiddleware');
 const generateToken = require('../utils/generateToken');
 
-const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:5173';
+const CLIENT_URL = process.env.CLIENT_URL || 'https://hotel-booking-blue.vercel.app';
 
 // Auth routes
 router.post('/register', registerValidator, registerUser);
@@ -58,9 +58,10 @@ router.get('/google/callback',
   (req, res) => {
     const token = generateToken(req.user);
     res.cookie('token', token, {
-      httpOnly: true,
-      sameSite: 'lax',
-    });
+  httpOnly: true,
+  secure: true,          // REQUIRED for Render + Vercel
+  sameSite: 'none'       // REQUIRED for cross-domain cookies
+});
 
     res.send(`
       <script>
