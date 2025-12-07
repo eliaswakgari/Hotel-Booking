@@ -49,6 +49,10 @@ app.use("/api/chat", chatRoutes);
 app.use("/api/audit", auditRoutes);
 // Add this line with your other app.use routes
 app.use('/api/notifications', notificationRoutes);
+app.get("/", (req, res) => {
+  res.send("Hotel Booking API is running!");
+});
+
 // Error handler
 app.use(errorHandler);
 
