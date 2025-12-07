@@ -32,7 +32,7 @@ const Login = () => {
     if (validationErrors && validationErrors.length > 0) {
       // Convert validation errors to field-specific errors
       const newFieldErrors = { email: "", password: "" };
-      
+
       validationErrors.forEach(error => {
         if (error.path === 'email') {
           newFieldErrors.email = error.msg;
@@ -40,9 +40,9 @@ const Login = () => {
           newFieldErrors.password = error.msg;
         }
       });
-      
+
       setFieldErrors(newFieldErrors);
-      
+
       // Show detailed validation errors
       const errorMessages = validationErrors.map(err => `• ${err.msg}`).join('\n');
       Swal.fire({
@@ -119,7 +119,7 @@ const Login = () => {
     dispatch(clearError());
     dispatch(clearValidationErrors());
     setFieldErrors({ email: "", password: "" });
-    
+
     try {
       const result = await dispatch(loginUser(formData)).unwrap();
       if (result.success) {
@@ -146,15 +146,10 @@ const Login = () => {
   // Handle Google Login
   // ===============================
   const handleGoogleLogin = () => {
-    const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
-    const googleAuthWindow = window.open(
-      `${apiUrl}/auth/google`,
-      "_blank",
-      "width=500,height=600"
-    );
+    window.open(`${import.meta.env.VITE_API_URL}/api/auth/google`, "_self");
 
     window.addEventListener("message", (event) => {
-      const backendOrigin = "http://localhost:5000";
+      const backendOrigin = new URL(import.meta.env.VITE_API_URL).origin;
       if (event.origin !== backendOrigin) return;
       const { user: googleUser, token } = event.data;
       if (googleUser && token) {
@@ -205,11 +200,10 @@ const Login = () => {
                 value={formData.email}
                 onChange={handleEmailChange}
                 required
-                className={`p-3 rounded-lg border focus:outline-none focus:ring-2 w-full ${
-                  fieldErrors.email 
-                    ? "border-red-500 focus:ring-red-400 bg-red-50" 
-                    : "border-gray-300 focus:ring-blue-400"
-                }`}
+                className={`p-3 rounded-lg border focus:outline-none focus:ring-2 w-full ${fieldErrors.email
+                  ? "border-red-500 focus:ring-red-400 bg-red-50"
+                  : "border-gray-300 focus:ring-blue-400"
+                  }`}
               />
               <AnimatePresence>
                 {fieldErrors.email && (
@@ -235,11 +229,10 @@ const Login = () => {
                   value={formData.password}
                   onChange={handlePasswordChange}
                   required
-                  className={`p-3 rounded-lg border focus:outline-none focus:ring-2 w-full pr-10 ${
-                    fieldErrors.password 
-                      ? "border-red-500 focus:ring-red-400 bg-red-50" 
-                      : "border-gray-300 focus:ring-blue-400"
-                  }`}
+                  className={`p-3 rounded-lg border focus:outline-none focus:ring-2 w-full pr-10 ${fieldErrors.password
+                    ? "border-red-500 focus:ring-red-400 bg-red-50"
+                    : "border-gray-300 focus:ring-blue-400"
+                    }`}
                 />
                 <button
                   type="button"
