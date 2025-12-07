@@ -32,10 +32,16 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.use(cors({
-  origin: process.env.CLIENT_URL || "http://localhost:5173",
+  origin: [
+    process.env.CLIENT_URL,
+    "http://localhost:5173",
+    "https://hotel-booking-3.vercel.app",
+    /\.vercel\.app$/
+  ],
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
 }));
+
 app.use(passport.initialize());
 // ===== Routes =====
 app.use('/api/auth', authRoutes);
