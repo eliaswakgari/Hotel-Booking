@@ -3,13 +3,25 @@ import axios from 'axios';
 
 const isLocalhost = typeof window !== "undefined" && window.location.hostname === "localhost";
 
+const resolveBackendBase = () => {
+  const raw = import.meta.env.VITE_API_URL;
+  if (!raw) return "";
+  let base = raw.replace(/\/+$/, "");
+  if (base.endsWith("/api")) {
+    base = base.slice(0, -4);
+  }
+  return base;
+};
+
 // In dev: http://localhost:5000/api/hotels
-// In prod: `${VITE_API_URL}/api/hotels` where VITE_API_URL is backend root
+// In prod: `${backendBase}/api/hotels` where VITE_API_URL may be with or without `/api`
+const backendBase = resolveBackendBase();
+
 const API = axios.create({
   baseURL: isLocalhost
     ? "http://localhost:5000/api/hotels"
-    : import.meta.env.VITE_API_URL
-      ? `${import.meta.env.VITE_API_URL}/api/hotels`
+    : backendBase
+      ? `${backendBase}/api/hotels`
       : "http://localhost:5000/api/hotels",
   withCredentials: true,
 });

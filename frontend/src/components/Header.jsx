@@ -435,88 +435,106 @@ const Header = () => {
       {/* Mobile Navigation */}
       <AnimatePresence>
         {menuOpen && (
-          <motion.nav
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
-            className="md:hidden bg-white border-t border-gray-200 text-gray-700 px-4 overflow-hidden"
+          <motion.div
+            className="md:hidden fixed inset-0 z-40"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
           >
-            {/* Add notification section for mobile */}
-            {user && unreadCount > 0 && (
-              <div className="py-3 border-b border-gray-100 bg-blue-50">
-                <Link
-                  to="/admin/notifications"
-                  className="flex items-center gap-2 text-blue-600 font-medium"
-                  onClick={() => setMenuOpen(false)}
-                >
-                  <FaBell />
-                  Notifications ({unreadCount})
-                </Link>
-              </div>
-            )}
+            {/* Dimmed background */}
+            <button
+              type="button"
+              className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+              onClick={() => setMenuOpen(false)}
+            />
 
-            {navLinks.map((link) => (
-              <Link
-                key={link.name}
-                to={link.to}
-                className="block py-3 flex items-center gap-2 hover:text-rose-500 border-b border-gray-100"
-                onClick={() => setMenuOpen(false)}
-              >
-                {link.icon} {link.name}
-              </Link>
-            ))}
-
-            {/* User info in mobile menu */}
-            {user && (
-              <div className="py-3 border-t border-gray-200">
-                <div className="flex items-center gap-2 py-2">
-                  {user?.profileImage ? (
-                    <img
-                      src={user.profileImage}
-                      alt={`${user.name}'s avatar`}
-                      className="w-8 h-8 rounded-full object-cover border-2 border-gray-200"
-                    />
-                  ) : (
-                    <div className="w-8 h-8 rounded-full bg-rose-500 text-white flex items-center justify-center text-sm font-bold">
-                      {getUserInitials()}
-                    </div>
-                  )}
-                  <div>
-                    <p className="font-semibold text-gray-900">{user.name}</p>
-                    <p className="text-xs text-gray-500">{user.email}</p>
-                    <p className="text-xs text-rose-500 font-medium capitalize">
-                      {user.role}
-                    </p>
-                  </div>
-                </div>
-                <Link
-                  to={user?.role === "admin" ? "/admin/settings" : "/profile"}
-                  className="block py-2 text-gray-700 hover:text-rose-500"
-                  onClick={() => setMenuOpen(false)}
-                >
-                  Profile Settings
-                </Link>
-                {user?.role === "admin" && (
+            {/* Sliding panel from right */}
+            <motion.nav
+              initial={{ x: "100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "100%" }}
+              transition={{ type: "spring", stiffness: 260, damping: 26 }}
+              className="absolute right-0 top-0 h-full w-4/5 max-w-xs bg-white text-gray-700 shadow-xl border-l border-gray-200 flex flex-col px-4 py-4"
+            >
+              {/* Add notification section for mobile */}
+              {user && unreadCount > 0 && (
+                <div className="py-3 mb-2 rounded-lg bg-blue-50 border border-blue-100">
                   <Link
                     to="/admin/notifications"
-                    className="block py-2 text-gray-700 hover:text-rose-500"
+                    className="flex items-center gap-2 text-blue-600 font-medium"
                     onClick={() => setMenuOpen(false)}
                   >
-                    Notifications
+                    <FaBell />
+                    Notifications ({unreadCount})
                   </Link>
+                </div>
+              )}
+
+              <div className="flex-1 overflow-y-auto">
+                {navLinks.map((link) => (
+                  <Link
+                    key={link.name}
+                    to={link.to}
+                    className="block py-3 flex items-center gap-2 hover:text-rose-500 border-b border-gray-100"
+                    onClick={() => setMenuOpen(false)}
+                  >
+                    {link.icon} {link.name}
+                  </Link>
+                ))}
+
+                {/* User info in mobile menu */}
+                {user && (
+                  <div className="py-4 border-t border-gray-200 mt-2">
+                    <div className="flex items-center gap-2 py-2">
+                      {user?.profileImage ? (
+                        <img
+                          src={user.profileImage}
+                          alt={`${user.name}'s avatar`}
+                          className="w-8 h-8 rounded-full object-cover border-2 border-gray-200"
+                        />
+                      ) : (
+                        <div className="w-8 h-8 rounded-full bg-rose-500 text-white flex items-center justify-center text-sm font-bold">
+                          {getUserInitials()}
+                        </div>
+                      )}
+                      <div>
+                        <p className="font-semibold text-gray-900">{user.name}</p>
+                        <p className="text-xs text-gray-500">{user.email}</p>
+                        <p className="text-xs text-rose-500 font-medium capitalize">
+                          {user.role}
+                        </p>
+                      </div>
+                    </div>
+                    <Link
+                      to={user?.role === "admin" ? "/admin/settings" : "/profile"}
+                      className="block py-2 text-gray-700 hover:text-rose-500"
+                      onClick={() => setMenuOpen(false)}
+                    >
+                      Profile Settings
+                    </Link>
+                    {user?.role === "admin" && (
+                      <Link
+                        to="/admin/notifications"
+                        className="block py-2 text-gray-700 hover:text-rose-500"
+                        onClick={() => setMenuOpen(false)}
+                      >
+                        Notifications
+                      </Link>
+                    )}
+                    <button
+                      onClick={() => {
+                        handleLogout();
+                        setMenuOpen(false);
+                      }}
+                      className="w-full text-left block py-2 text-gray-700 hover:text-rose-500 border-t border-gray-100 mt-2"
+                    >
+                      Logout
+                    </button>
+                  </div>
                 )}
-                <button
-                  onClick={() => {
-                    handleLogout();
-                    setMenuOpen(false);
-                  }}
-                  className="w-full text-left block py-2 text-gray-700 hover:text-rose-500 border-t border-gray-100 mt-2"
-                >
-                  Logout
-                </button>
               </div>
-            )}
-          </motion.nav>
+            </motion.nav>
+          </motion.div>
         )}
       </AnimatePresence>
     </header>

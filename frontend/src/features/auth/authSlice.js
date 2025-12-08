@@ -98,6 +98,11 @@ const authSlice = createSlice({
         s.user = null;
         s.loading = false;
         s.validationErrors = [];
+
+        // Clear any persisted auth token on explicit logout
+        if (typeof window !== 'undefined') {
+          window.localStorage.removeItem('authToken');
+        }
       })
 
       // FETCH PROFILE - Don't set error for auth failures

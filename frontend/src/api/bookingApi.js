@@ -4,12 +4,25 @@ import axios from "axios";
 const isLocalhost = typeof window !== "undefined" && window.location.hostname === "localhost";
 
 // In dev: http://localhost:5000/api/bookings
-// In prod: `${VITE_API_URL}/api/bookings` where VITE_API_URL is the backend root (e.g. https://hotel-booking-5-tp2l.onrender.com)
+// In prod: `${backendBase}/api/bookings` where VITE_API_URL may be with or without `/api`
+const resolveBackendBase = () => {
+  const raw = import.meta.env.VITE_API_URL;
+  if (!raw) return "";
+  let base = raw.replace(/\/+$/, "");
+  // If user accidentally includes /api in VITE_API_URL, strip it
+  if (base.endsWith("/api")) {
+    base = base.slice(0, -4);
+  }
+  return base;
+};
+
+const backendBase = resolveBackendBase();
+
 const API = axios.create({
   baseURL: isLocalhost
     ? "http://localhost:5000/api/bookings"
-    : import.meta.env.VITE_API_URL
-      ? `${import.meta.env.VITE_API_URL}/api/bookings`
+    : backendBase
+      ? `${backendBase}/api/bookings`
       : "http://localhost:5000/api/bookings",
   withCredentials: true,
 });
