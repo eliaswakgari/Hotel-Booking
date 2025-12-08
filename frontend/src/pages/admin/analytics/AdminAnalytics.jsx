@@ -106,20 +106,20 @@ const AdminAnalytics = () => {
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-        <KpiCard 
-          title="Total Revenue" 
-          value={`$${totalRevenue.toLocaleString()}`} 
-          color="text-blue-600" 
+        <KpiCard
+          title="Total Revenue"
+          value={`$${totalRevenue.toLocaleString()}`}
+          color="text-blue-600"
         />
-        <KpiCard 
-          title="Total Bookings" 
-          value={totalBookings.toLocaleString()} 
-          color="text-green-600" 
+        <KpiCard
+          title="Total Bookings"
+          value={totalBookings.toLocaleString()}
+          color="text-green-600"
         />
-        <KpiCard 
-          title="Top Hotel" 
-          value={topHotel} 
-          color="text-purple-600" 
+        <KpiCard
+          title="Top Hotel"
+          value={topHotel}
+          color="text-purple-600"
         />
       </div>
 
@@ -145,7 +145,7 @@ const AdminAnalytics = () => {
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="hotel" />
                   <YAxis />
-                  <Tooltip 
+                  <Tooltip
                     formatter={(value, name) => {
                       if (name === 'revenue') return [`$${value.toLocaleString()}`, 'Revenue'];
                       if (name === 'bookings') return [value.toLocaleString(), 'Bookings'];
@@ -174,9 +174,9 @@ const AdminAnalytics = () => {
                     label={renderCustomizedLabel}
                   >
                     {safeAnalyticsData.map((entry, index) => (
-                      <Cell 
-                        key={`cell-${entry?.hotel || index}-${index}`} 
-                        fill={COLORS[index % COLORS.length]} 
+                      <Cell
+                        key={`cell-${entry?.hotel || index}-${index}`}
+                        fill={COLORS[index % COLORS.length]}
                       />
                     ))}
                   </Pie>
@@ -196,7 +196,7 @@ const AdminAnalytics = () => {
           {/* Top Performing Hotels Table */}
           <div className="bg-white dark:bg-gray-800 shadow-md rounded-xl p-5 overflow-x-auto">
             <h3 className="font-semibold mb-4">Top Performing Hotels</h3>
-            <table className="min-w-full table-auto border-collapse">
+            <table className="min-w-[700px] w-full table-auto border-collapse text-sm">
               <thead>
                 <tr className="bg-gray-100 dark:bg-gray-700 text-left">
                   <th className="px-4 py-2 border-b">Hotel</th>

@@ -11,7 +11,15 @@ import AdminLayout from "../../layouts/AdminLayout";
 import Swal from "sweetalert2";
 import { io } from "socket.io-client";
 
-const socket = io(import.meta.env.VITE_API_URL || "http://localhost:5000");
+const rawSocketBase = import.meta.env.VITE_API_URL || "http://localhost:5000";
+let socketBase = rawSocketBase.replace(/\/+$/, "");
+if (socketBase.endsWith("/api")) {
+  socketBase = socketBase.slice(0, -4);
+}
+
+const socket = io(socketBase, {
+  withCredentials: true,
+});
 
 const BookingsManagement = () => {
   const dispatch = useDispatch();
@@ -88,10 +96,10 @@ const BookingsManagement = () => {
     try {
       setProcessingRefund(booking._id);
       const res = await dispatch(issueRefund({ id: booking._id, type })).unwrap();
-      
+
       // Force refresh bookings to get latest data
       await dispatch(fetchBookings());
-      
+
       Swal.fire({
         icon: "success",
         title: "Refund Processed!",
@@ -115,7 +123,7 @@ const BookingsManagement = () => {
       completed: "bg-blue-100 text-blue-800",
       refunded: "bg-gray-100 text-gray-800"
     };
-    
+
     return (
       <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusColors[status] || 'bg-gray-100'}`}>
         {status}
@@ -135,9 +143,9 @@ const BookingsManagement = () => {
             onChange={handleSearchChange}
             className="border px-3 py-2 rounded-lg w-64 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
-          <select 
-            value={limit} 
-            onChange={handleLimitChange} 
+          <select
+            value={limit}
+            onChange={handleLimitChange}
             className="border px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             {[5, 10, 20, 50].map((n) => (
@@ -159,7 +167,7 @@ const BookingsManagement = () => {
         <>
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden">
             <div className="overflow-x-auto">
-              <table className="min-w-full">
+              <table className="min-w-[1100px] w-full text-sm">
                 <thead className="bg-gray-50 dark:bg-gray-700">
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
@@ -235,11 +243,10 @@ const BookingsManagement = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
                         {booking.refundStatus !== 'none' ? (
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                            booking.refundStatus === 'completed' ? 'bg-green-100 text-green-800' :
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${booking.refundStatus === 'completed' ? 'bg-green-100 text-green-800' :
                             booking.refundStatus === 'partial' ? 'bg-yellow-100 text-yellow-800' :
-                            'bg-blue-100 text-blue-800'
-                          }`}>
+                              'bg-blue-100 text-blue-800'
+                            }`}>
                             {booking.refundStatus}
                           </span>
                         ) : (
@@ -264,99 +271,93 @@ const BookingsManagement = () => {
                                 <button
                                   onClick={() => handleRefund(booking, "full")}
                                   disabled={processingRefund === booking._id}
-                                  className={`${
-                                    processingRefund === booking._id 
-                                      ? "bg-gray-400 cursor-not-allowed" 
-                                      : "bg-red-500 hover:bg-red-600"
-                                  } text-white px-2 py-1 rounded text-xs transition-colors flex-1`}
+                                  className={`${processingRefund === booking._id
+                                    ? "bg-gray-400 cursor-not-allowed"
+                                    : "bg-red-500 hover:bg-red-600"
+                                    } text-white px-2 py-1 rounded text-xs transition-colors flex-1`}
                                 >
                                   {processingRefund === booking._id ? "Processing..." : "Full Refund"}
                                 </button>
                                 <button
                                   onClick={() => handleRefund(booking, "partial")}
                                   disabled={processingRefund === booking._id}
-                                  className={`${
-                                    processingRefund === booking._id 
-                                      ? "bg-gray-400 cursor-not-allowed" 
-                                      : "bg-yellow-500 hover:bg-yellow-600"
-                                  } text-white px-2 py-1 rounded text-xs transition-colors flex-1`}
+                                  className={`${processingRefund === booking._id
+                                    ? "bg-gray-400 cursor-not-allowed"
+                                    : "bg-yellow-500 hover:bg-yellow-600"
+                                    } text-white px-2 py-1 rounded text-xs transition-colors flex-1`}
                                 >
                                   {processingRefund === booking._id ? "Processing..." : "Partial"}
                                 </button>
                               </div>
                             </div>
                           )}
-                          
+
                           {/* Show "Approved" for confirmed bookings without refund */}
                           {booking.status === "confirmed" && booking.refundStatus === "none" && (
                             <span className="text-green-600 text-xs font-medium">Approved</span>
                           )}
-                          
+
                           {/* Show refund options for confirmed bookings that haven't been refunded */}
                           {booking.status === "confirmed" && booking.refundStatus === "none" && (
                             <div className="flex gap-1">
                               <button
                                 onClick={() => handleRefund(booking, "full")}
                                 disabled={processingRefund === booking._id}
-                                className={`${
-                                  processingRefund === booking._id 
-                                    ? "bg-gray-400 cursor-not-allowed" 
-                                    : "bg-red-500 hover:bg-red-600"
-                                } text-white px-2 py-1 rounded text-xs transition-colors flex-1`}
+                                className={`${processingRefund === booking._id
+                                  ? "bg-gray-400 cursor-not-allowed"
+                                  : "bg-red-500 hover:bg-red-600"
+                                  } text-white px-2 py-1 rounded text-xs transition-colors flex-1`}
                               >
                                 {processingRefund === booking._id ? "Processing..." : "Full Refund"}
                               </button>
                               <button
                                 onClick={() => handleRefund(booking, "partial")}
                                 disabled={processingRefund === booking._id}
-                                className={`${
-                                  processingRefund === booking._id 
-                                    ? "bg-gray-400 cursor-not-allowed" 
-                                    : "bg-yellow-500 hover:bg-yellow-600"
-                                } text-white px-2 py-1 rounded text-xs transition-colors flex-1`}
+                                className={`${processingRefund === booking._id
+                                  ? "bg-gray-400 cursor-not-allowed"
+                                  : "bg-yellow-500 hover:bg-yellow-600"
+                                  } text-white px-2 py-1 rounded text-xs transition-colors flex-1`}
                               >
                                 {processingRefund === booking._id ? "Processing..." : "Partial"}
                               </button>
                             </div>
                           )}
-                          
+
                           {/* Show "Partially Refunded" for partial refunds */}
                           {booking.refundStatus === "partial" && (
                             <span className="text-yellow-600 text-xs font-medium">Partially Refunded</span>
                           )}
-                          
+
                           {/* Show "Fully Refunded" for completed refunds */}
                           {booking.refundStatus === "completed" && (
                             <span className="text-green-600 text-xs font-medium">Fully Refunded ✓</span>
                           )}
-                          
+
                           {/* Show message for completed bookings */}
                           {booking.status === "completed" && (
                             <span className="text-blue-600 text-xs font-medium">Stay Completed</span>
                           )}
-                          
+
                           {/* Show refund options for cancelled bookings */}
                           {booking.status === "cancelled" && booking.refundStatus === "none" && (
                             <div className="flex gap-1">
                               <button
                                 onClick={() => handleRefund(booking, "full")}
                                 disabled={processingRefund === booking._id}
-                                className={`${
-                                  processingRefund === booking._id 
-                                    ? "bg-gray-400 cursor-not-allowed" 
-                                    : "bg-red-500 hover:bg-red-600"
-                                } text-white px-2 py-1 rounded text-xs transition-colors flex-1`}
+                                className={`${processingRefund === booking._id
+                                  ? "bg-gray-400 cursor-not-allowed"
+                                  : "bg-red-500 hover:bg-red-600"
+                                  } text-white px-2 py-1 rounded text-xs transition-colors flex-1`}
                               >
                                 {processingRefund === booking._id ? "Processing..." : "Full Refund"}
                               </button>
                               <button
                                 onClick={() => handleRefund(booking, "partial")}
                                 disabled={processingRefund === booking._id}
-                                className={`${
-                                  processingRefund === booking._id 
-                                    ? "bg-gray-400 cursor-not-allowed" 
-                                    : "bg-yellow-500 hover:bg-yellow-600"
-                                } text-white px-2 py-1 rounded text-xs transition-colors flex-1`}
+                                className={`${processingRefund === booking._id
+                                  ? "bg-gray-400 cursor-not-allowed"
+                                  : "bg-yellow-500 hover:bg-yellow-600"
+                                  } text-white px-2 py-1 rounded text-xs transition-colors flex-1`}
                               >
                                 {processingRefund === booking._id ? "Processing..." : "Partial"}
                               </button>
@@ -390,11 +391,10 @@ const BookingsManagement = () => {
                   <button
                     key={pageNum}
                     onClick={() => setPage(pageNum)}
-                    className={`px-4 py-2 rounded-lg transition-colors ${
-                      page === pageNum
-                        ? "bg-blue-500 text-white"
-                        : "bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600"
-                    }`}
+                    className={`px-4 py-2 rounded-lg transition-colors ${page === pageNum
+                      ? "bg-blue-500 text-white"
+                      : "bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600"
+                      }`}
                   >
                     {pageNum}
                   </button>

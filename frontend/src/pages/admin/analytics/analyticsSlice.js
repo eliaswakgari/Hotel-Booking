@@ -2,12 +2,36 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
 
+// Configure axios to talk to the correct backend in both local dev and production
+const isLocalhost = typeof window !== "undefined" && window.location.hostname === "localhost";
+
+const resolveBackendBase = () => {
+  const raw = import.meta.env.VITE_API_URL;
+  if (!raw) return "";
+  let base = raw.replace(/\/+$/, "");
+  if (base.endsWith("/api")) {
+    base = base.slice(0, -4);
+  }
+  return base;
+};
+
+const backendBase = resolveBackendBase();
+
+const analyticsAxios = axios.create({
+  baseURL: isLocalhost
+    ? "http://localhost:5000/api/admin"
+    : backendBase
+      ? `${backendBase}/api/admin`
+      : "http://localhost:5000/api/admin",
+  withCredentials: true,
+});
+
 // ✅ Async thunk to fetch analytics data
 export const fetchAnalytics = createAsyncThunk(
   "analytics/fetchAnalytics",
   async (_, { rejectWithValue }) => {
     try {
-      const { data } = await axios.get("/api/admin/analytics"); // your backend route
+      const { data } = await analyticsAxios.get("/analytics"); // your backend route
       // Make sure backend returns array of { hotel, revenue, bookings, growth }
       return data;
     } catch (error) {

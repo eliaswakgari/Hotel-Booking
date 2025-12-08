@@ -21,7 +21,15 @@ const AuditDashboard = () => {
   useEffect(() => {
     dispatch(fetchAuditMetrics());
 
-    const socket = io(import.meta.env.VITE_BACKEND_URL || "http://localhost:5000");
+    const raw = import.meta.env.VITE_API_URL || "http://localhost:5000";
+    let base = raw.replace(/\/+$/, "");
+    if (base.endsWith("/api")) {
+      base = base.slice(0, -4);
+    }
+
+    const socket = io(base, {
+      withCredentials: true,
+    });
     socket.on("auditUpdate", () => {
       dispatch(fetchAuditMetrics());
     });

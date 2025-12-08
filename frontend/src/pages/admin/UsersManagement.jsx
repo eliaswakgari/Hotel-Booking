@@ -68,7 +68,7 @@ const UsersManagement = () => {
           <p className="text-gray-500">Loading users...</p>
         ) : (
           <div className="overflow-x-auto">
-            <table className="min-w-full border rounded-lg">
+            <table className="min-w-[900px] w-full border rounded-lg text-sm">
               <thead className="bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200">
                 <tr>
                   <th className="p-3 text-left">Name</th>
@@ -97,8 +97,8 @@ const UsersManagement = () => {
                       {Array.isArray(user.bookings)
                         ? user.bookings.length
                         : typeof user.bookings === "object"
-                        ? JSON.stringify(user.bookings)
-                        : user.bookings || "N/A"}
+                          ? JSON.stringify(user.bookings)
+                          : user.bookings || "N/A"}
                     </td>
 
                     <td>{user.paymentVerified ? "✅" : "❌"}</td>
@@ -121,11 +121,10 @@ const UsersManagement = () => {
                       </button>
                       <button
                         onClick={() => handleToggleBan(user)}
-                        className={`px-2 py-1 rounded text-white ${
-                          user.banned
+                        className={`px-2 py-1 rounded text-white ${user.banned
                             ? "bg-blue-500 hover:bg-blue-600"
                             : "bg-red-500 hover:bg-red-600"
-                        }`}
+                          }`}
                       >
                         {user.banned ? "Unban" : "Ban"}
                       </button>

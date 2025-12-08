@@ -24,6 +24,7 @@ const HotelsManagement = () => {
   const { hotels, loading } = useSelector((state) => state.hotel);
 
   const [socket, setSocket] = useState(null);
+
   const [showModal, setShowModal] = useState(false);
   const [showLocationModal, setShowLocationModal] = useState(false);
   const [editingRoom, setEditingRoom] = useState(null);
@@ -43,7 +44,16 @@ const HotelsManagement = () => {
 
   // Initialize Socket.IO
   useEffect(() => {
-    const newSocket = io("http://localhost:5000");
+    const rawSocketBase = import.meta.env.VITE_API_URL || "http://localhost:5000";
+    let socketBase = rawSocketBase.replace(/\/+$/, "");
+    if (socketBase.endsWith("/api")) {
+      socketBase = socketBase.slice(0, -4);
+    }
+
+    const newSocket = io(socketBase, {
+      withCredentials: true,
+    });
+
     setSocket(newSocket);
 
     newSocket.on("hotelCreated", () => dispatch(fetchHotels()));
@@ -395,7 +405,7 @@ const HotelsManagement = () => {
               <span className="text-sm text-gray-500">{rooms.length} room(s)</span>
             </div>
             <div className="overflow-x-auto">
-              <table className="min-w-full text-sm">
+              <table className="min-w-[800px] w-full text-sm">
                 <thead className="bg-gray-50 dark:bg-gray-800">
                   <tr>
                     <th className="px-4 py-2 text-left font-semibold">Image</th>

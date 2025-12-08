@@ -8,8 +8,29 @@ import {
 import { toggleDarkMode } from "../../features/theme/themeSlice"; // Import the theme action
 import axios from "axios";
 
-axios.defaults.withCredentials = true;
-axios.defaults.baseURL = "http://localhost:5000";
+// Configure axios to talk to the correct backend in both local dev and production
+const isLocalhost = typeof window !== "undefined" && window.location.hostname === "localhost";
+
+const resolveBackendBase = () => {
+  const raw = import.meta.env.VITE_API_URL;
+  if (!raw) return "";
+  let base = raw.replace(/\/+$/, "");
+  if (base.endsWith("/api")) {
+    base = base.slice(0, -4);
+  }
+  return base;
+};
+
+const backendBase = resolveBackendBase();
+
+const settingsAxios = axios.create({
+  baseURL: isLocalhost
+    ? "http://localhost:5000/api"
+    : backendBase
+      ? `${backendBase}/api`
+      : "http://localhost:5000/api",
+  withCredentials: true,
+});
 
 const Settings = () => {
   const dispatch = useDispatch();
@@ -49,7 +70,7 @@ const Settings = () => {
     if (!name) return "";
     const nameParts = name.split(' ');
     if (nameParts.length >= 2) {
-      return `${nameParts[0][0]}${nameParts[nameParts.length-1][0]}`.toUpperCase();
+      return `${nameParts[0][0]}${nameParts[nameParts.length - 1][0]}`.toUpperCase();
     }
     return name.substring(0, 2).toUpperCase();
   };
@@ -63,7 +84,7 @@ const Settings = () => {
     setUploading(true);
 
     try {
-      const { data: uploadData } = await axios.post("/api/auth/upload", formData, {
+      const { data: uploadData } = await settingsAxios.post("/auth/upload", formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
@@ -107,13 +128,13 @@ const Settings = () => {
       <div className="text-gray-600 dark:text-gray-400">Loading...</div>
     </div>
   );
-  
+
   if (error) return (
     <div className="min-h-screen bg-white dark:bg-gray-900 flex items-center justify-center">
       <div className="text-red-500">Error: {error}</div>
     </div>
   );
-  
+
   if (!user) return (
     <div className="min-h-screen bg-white dark:bg-gray-900 flex items-center justify-center">
       <div className="text-gray-600 dark:text-gray-400">No user found. Please login.</div>
@@ -137,14 +158,12 @@ const Settings = () => {
             </div>
             <button
               onClick={handleToggleDarkMode}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-rose-500 focus:ring-offset-2 ${
-                darkMode ? 'bg-rose-500' : 'bg-gray-200'
-              }`}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-rose-500 focus:ring-offset-2 ${darkMode ? 'bg-rose-500' : 'bg-gray-200'
+                }`}
             >
               <span
-                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                  darkMode ? 'translate-x-6' : 'translate-x-1'
-                }`}
+                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${darkMode ? 'translate-x-6' : 'translate-x-1'
+                  }`}
               />
             </button>
           </div>

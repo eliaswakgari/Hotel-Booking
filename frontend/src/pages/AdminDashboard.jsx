@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from "react";
 import AdminLayout from "../layouts/AdminLayout";
 import { useDispatch, useSelector } from "react-redux";
-import { 
-  fetchDashboardMetrics, 
+import {
+  fetchDashboardMetrics,
   fetchAnalytics,
   fetchRealtimeMetrics,
-  updateMetricsRealtime 
+  updateMetricsRealtime
 } from "../features/dashboard/dashboardSlice";
 import {
   BarChart,
@@ -22,10 +22,10 @@ import {
   AreaChart,
   Area,
 } from "recharts";
-import { 
-  FiUsers, 
-  FiHome, 
-  FiCalendar, 
+import {
+  FiUsers,
+  FiHome,
+  FiCalendar,
   FiDollarSign,
   FiTrendingUp,
   FiTrendingDown,
@@ -46,7 +46,7 @@ const COLORS = ['#8B5CF6', '#06B6D4', '#10B981', '#F59E0B', '#EF4444'];
 const StatCard = ({ title, value, change, icon, color = "purple", delay = 0, subtitle }) => {
   const colorClasses = {
     purple: "from-purple-500 to-purple-600",
-    blue: "from-blue-500 to-cyan-500", 
+    blue: "from-blue-500 to-cyan-500",
     green: "from-emerald-500 to-green-500",
     orange: "from-amber-500 to-orange-500",
     red: "from-rose-500 to-pink-500"
@@ -61,7 +61,7 @@ const StatCard = ({ title, value, change, icon, color = "purple", delay = 0, sub
     >
       <div className="relative bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-2xl border border-white/20 dark:border-gray-700/50 p-6 shadow-lg hover:shadow-xl transition-all duration-500 hover:scale-105">
         <div className="absolute inset-0 bg-gradient-to-r from-purple-500/10 to-blue-500/10 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-        
+
         <div className="relative flex items-center justify-between">
           <div className="flex-1">
             <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">{title}</p>
@@ -72,11 +72,10 @@ const StatCard = ({ title, value, change, icon, color = "purple", delay = 0, sub
               <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">{subtitle}</p>
             )}
             {change !== undefined && (
-              <div className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
-                change > 0 
-                  ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' 
+              <div className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${change > 0
+                  ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'
                   : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'
-              }`}>
+                }`}>
                 {change > 0 ? <FiArrowUp size={12} /> : <FiArrowDown size={12} />}
                 {Math.abs(change)}%
               </div>
@@ -97,6 +96,16 @@ const AdminDashboard = () => {
   const [timeRange, setTimeRange] = useState('month');
   const [socket, setSocket] = useState(null);
 
+  // Normalize backend base for sockets (works for local and hosted envs)
+  const socketBase = React.useMemo(() => {
+    const raw = import.meta.env.VITE_API_URL || "http://localhost:5000";
+    let base = raw.replace(/\/+$/, "");
+    if (base.endsWith("/api")) {
+      base = base.slice(0, -4);
+    }
+    return base;
+  }, []);
+
   // Initialize socket and fetch data
   useEffect(() => {
     // Fetch initial data
@@ -105,7 +114,10 @@ const AdminDashboard = () => {
     dispatch(fetchRealtimeMetrics());
 
     // Set up socket for real-time updates
-    const newSocket = io("http://localhost:5000");
+    const newSocket = io(socketBase, {
+      withCredentials: true,
+    });
+
     setSocket(newSocket);
 
     // Listen for real-time updates
@@ -127,7 +139,7 @@ const AdminDashboard = () => {
       newSocket.disconnect();
       clearInterval(interval);
     };
-  }, [dispatch, timeRange]);
+  }, [dispatch, timeRange, socketBase]);
 
   // Process room type distribution for chart
   const roomDistribution = metrics?.roomTypeDistribution?.map((item, index) => ({
@@ -247,11 +259,10 @@ const AdminDashboard = () => {
                   setTimeRange(range);
                   dispatch(fetchAnalytics(range));
                 }}
-                className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-300 ${
-                  timeRange === range
+                className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-300 ${timeRange === range
                     ? 'bg-gradient-to-r from-purple-500 to-blue-600 text-white shadow-lg'
                     : 'text-gray-600 dark:text-gray-400 hover:bg-white/50 dark:hover:bg-gray-700/50'
-                }`}
+                  }`}
               >
                 {range.charAt(0).toUpperCase() + range.slice(1)}
               </button>
@@ -350,19 +361,19 @@ const AdminDashboard = () => {
             <AreaChart data={revenueData}>
               <defs>
                 <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#8B5CF6" stopOpacity={0.3}/>
-                  <stop offset="95%" stopColor="#8B5CF6" stopOpacity={0}/>
+                  <stop offset="5%" stopColor="#8B5CF6" stopOpacity={0.3} />
+                  <stop offset="95%" stopColor="#8B5CF6" stopOpacity={0} />
                 </linearGradient>
                 <linearGradient id="colorBookings" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#06B6D4" stopOpacity={0.3}/>
-                  <stop offset="95%" stopColor="#06B6D4" stopOpacity={0}/>
+                  <stop offset="5%" stopColor="#06B6D4" stopOpacity={0.3} />
+                  <stop offset="95%" stopColor="#06B6D4" stopOpacity={0} />
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
               <XAxis dataKey="period" />
               <YAxis />
-              <Tooltip 
-                contentStyle={{ 
+              <Tooltip
+                contentStyle={{
                   background: 'rgba(255, 255, 255, 0.9)',
                   backdropFilter: 'blur(10px)',
                   border: '1px solid rgba(255, 255, 255, 0.2)',
@@ -405,7 +416,7 @@ const AdminDashboard = () => {
                     <Cell key={`cell-${index}`} fill={entry.fill} />
                   ))}
                 </Pie>
-                <Tooltip 
+                <Tooltip
                   formatter={(value, name, props) => [
                     `${value} rooms ($${props.payload.revenue?.toLocaleString() || 0} revenue)`,
                     name

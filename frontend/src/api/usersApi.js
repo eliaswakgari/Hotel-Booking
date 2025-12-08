@@ -1,8 +1,26 @@
 // src/api/usersApi.js
 import axios from "axios";
 
+const isLocalhost = typeof window !== "undefined" && window.location.hostname === "localhost";
+
+const resolveBackendBase = () => {
+  const raw = import.meta.env.VITE_API_URL;
+  if (!raw) return "";
+  let base = raw.replace(/\/+$/, "");
+  if (base.endsWith("/api")) {
+    base = base.slice(0, -4);
+  }
+  return base;
+};
+
+const backendBase = resolveBackendBase();
+
 const API = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || "http://localhost:5000/api",
+  baseURL: isLocalhost
+    ? "http://localhost:5000/api"
+    : backendBase
+      ? `${backendBase}/api`
+      : "http://localhost:5000/api",
   withCredentials: true,
 });
 
