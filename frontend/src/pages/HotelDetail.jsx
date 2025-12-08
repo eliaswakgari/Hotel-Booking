@@ -22,13 +22,13 @@ const HotelDetail = () => {
   const { user } = useSelector((state) => state.auth);
 
   const {
-    data: hotel,
+    data: hotelData,
     isLoading,
   } = useQuery({
-    queryKey: ["hotel", id],
+    queryKey: ["room", id],
     queryFn: async () => {
-      const { data } = await axios.get(`/api/hotels/${id}`);
-      return data || {};
+      const { data } = await axios.get(`/api/hotels/rooms/${id}`);
+      return { hotel: data.hotel || {}, room: data.room || null };
     },
     staleTime: 5 * 60 * 1000,
     gcTime: 30 * 60 * 1000,
@@ -37,18 +37,10 @@ const HotelDetail = () => {
     refetchOnMount: false,
   });
 
+  const hotel = hotelData?.hotel || {};
+  const selectedRoom = hotelData?.room || null;
+
   const [showBookingModal, setShowBookingModal] = useState(false);
-
-  // Determine selected room based on navigation state (from Home cards)
-  const roomIdFromState = location.state?.roomId;
-  const roomDataFromState = location.state?.roomData;
-
-  const selectedRoom =
-    roomDataFromState?.room ||
-    (roomIdFromState && Array.isArray(hotel?.rooms)
-      ? hotel.rooms.find((r) => r._id === roomIdFromState)
-      : null) ||
-    null;
 
   // Choose images:
   // - If a room is selected, show only that room's own images (or a simple
@@ -103,7 +95,7 @@ const HotelDetail = () => {
         if (result.isConfirmed) {
           navigate("/login", {
             state: {
-              redirectTo: `/hotels/${id}`,
+              redirectTo: `/room/${id}`,
               message: "Please log in to book your room",
             },
           });

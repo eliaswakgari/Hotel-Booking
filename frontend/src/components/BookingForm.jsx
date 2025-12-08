@@ -3,6 +3,23 @@ import axios from "axios";
 import Swal from "sweetalert2";
 import { CardElement, useStripe, useElements } from "@stripe/react-stripe-js";
 
+const isLocalhost = typeof window !== "undefined" && window.location.hostname === "localhost";
+
+const API_BASE = isLocalhost
+  ? "http://localhost:5000/api"
+  : import.meta.env.VITE_API_URL
+    ? `${import.meta.env.VITE_API_URL}/api`
+    : "http://localhost:5000/api";
+
+// Helper to read cookies in browser
+const getCookie = (name) => {
+  if (typeof document === "undefined") return null;
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) return parts.pop().split(";").shift();
+  return null;
+};
+
 const BookingForm = ({ hotel, selectedRoom, onClose }) => {
   const stripe = useStripe();
   const elements = useElements();
@@ -68,14 +85,25 @@ const BookingForm = ({ hotel, selectedRoom, onClose }) => {
       setLoading(true);
 
       // 1) Ask backend to create a payment intent and auto-assign an available room
-      const intentRes = await axios.post("/api/bookings/create-payment-intent", {
-        hotelId: hotel._id,
-        checkIn,
-        checkOut,
-        adults,
-        children,
-        roomType,
-      });
+      const storedToken = typeof window !== "undefined" ? localStorage.getItem("authToken") : null;
+      const cookieToken = getCookie("token");
+      const authToken = cookieToken || storedToken;
+
+      const intentRes = await axios.post(
+        `${API_BASE}/bookings/create-payment-intent`,
+        {
+          hotelId: hotel._id,
+          checkIn,
+          checkOut,
+          adults,
+          children,
+          roomType,
+        },
+        {
+          withCredentials: true,
+          headers: authToken ? { Authorization: `Bearer ${authToken}` } : {},
+        }
+      );
 
       const {
         clientSecret,
@@ -101,17 +129,24 @@ const BookingForm = ({ hotel, selectedRoom, onClose }) => {
       }
 
       // 3) Create booking record in backend using the confirmed payment
-      await axios.post("/api/bookings", {
-        hotelId: hotel._id,
-        checkIn,
-        checkOut,
-        adults,
-        children,
-        roomType,
-        roomNumber,
-        totalPrice,
-        paymentIntentId,
-      });
+      await axios.post(
+        `${API_BASE}/bookings`,
+        {
+          hotelId: hotel._id,
+          checkIn,
+          checkOut,
+          adults,
+          children,
+          roomType,
+          roomNumber,
+          totalPrice,
+          paymentIntentId,
+        },
+        {
+          withCredentials: true,
+          headers: authToken ? { Authorization: `Bearer ${authToken}` } : {},
+        }
+      );
 
       Swal.fire("Success", "Booking created successfully.", "success");
       if (onClose) onClose();

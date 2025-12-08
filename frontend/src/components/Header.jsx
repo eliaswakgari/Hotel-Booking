@@ -9,6 +9,11 @@ import { toast } from "react-toastify";
 import { FiMessageCircle } from "react-icons/fi";
 import { io } from "socket.io-client";
 
+// Choose socket base URL depending on environment
+const SOCKET_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+// Use full websocket+polling locally; polling-only for hosted envs where websockets may be restricted
+const SOCKET_TRANSPORTS = import.meta.env.VITE_API_URL ? ["polling"] : ["websocket", "polling"];
+
 const Header = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -24,10 +29,8 @@ const Header = () => {
   useEffect(() => {
     if (user) {
       console.log('🔄 Fetching notifications for user:', user._id);
-      dispatch(fetchNotifications())
-        .unwrap()
-        .then(() => console.log('✅ Notifications fetched successfully'))
-        .catch(error => console.error('❌ Error fetching notifications:', error));
+      // Fire-and-forget; auth failures are normal when not fully authenticated
+      dispatch(fetchNotifications());
     }
   }, [dispatch, user]);
 
@@ -36,9 +39,9 @@ const Header = () => {
     if (!user) return;
 
     console.log('🔌 Connecting to socket for user:', user._id);
-    const newSocket = io("http://localhost:5000", {
+    const newSocket = io(SOCKET_BASE_URL, {
       withCredentials: true,
-      transports: ['websocket', 'polling']
+      transports: SOCKET_TRANSPORTS,
     });
 
     setSocket(newSocket);

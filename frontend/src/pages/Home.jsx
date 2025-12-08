@@ -450,14 +450,9 @@ const Home = () => {
                         const hasImageError = imageErrors[roomId];
 
                         const handleCardClick = () => {
-                          navigate(`/hotel/${hotel._id}`, {
-                            state: room?._id
-                              ? {
-                                roomId: room._id,
-                                roomData,
-                              }
-                              : undefined,
-                          });
+                          if (room?._id) {
+                            navigate(`/room/${room._id}`);
+                          }
                         };
 
                         const handleBookNow = (e) => {
@@ -466,24 +461,20 @@ const Home = () => {
                           if (!user) {
                             navigate("/login", {
                               state: {
-                                redirectTo: `/hotel/${hotel._id}`,
+                                redirectTo: room?._id ? `/room/${room._id}` : "/",
                                 message: "Please log in to book a room",
                               },
                             });
                             return;
                           }
 
-                          navigate(`/hotel/${hotel._id}`, {
-                            state: room?._id
-                              ? {
-                                roomId: room._id,
-                                roomData,
-                                openBooking: true,
-                              }
-                              : {
+                          if (room?._id) {
+                            navigate(`/room/${room._id}`, {
+                              state: {
                                 openBooking: true,
                               },
-                          });
+                            });
+                          }
                         };
 
                         return (

@@ -59,6 +59,11 @@ const authSlice = createSlice({
         s.loading = false;
         s.user = a.payload.data;
         s.validationErrors = [];
+
+        // Persist token for subsequent API calls if present
+        if (a.payload?.data?.token) {
+          localStorage.setItem('authToken', a.payload.data.token);
+        }
       })
       .addCase(registerUser.rejected, (s, a) => {
         s.loading = false;
@@ -76,6 +81,11 @@ const authSlice = createSlice({
         s.loading = false;
         s.user = a.payload.data;
         s.validationErrors = [];
+
+        // Persist token for subsequent API calls if present
+        if (a.payload?.data?.token) {
+          localStorage.setItem('authToken', a.payload.data.token);
+        }
       })
       .addCase(loginUser.rejected, (s, a) => {
         s.loading = false;

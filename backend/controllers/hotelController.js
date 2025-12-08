@@ -738,6 +738,30 @@ exports.fixDuplicateRoomIds = asyncHandler(async (req, res) => {
     res.status(500).json({ message: 'Error fixing duplicate room IDs', error: error.message });
   }
 });
+
+// GET single room by room ID (with its hotel)
+exports.getRoomById = asyncHandler(async (req, res) => {
+  const { roomId } = req.params;
+
+  if (!mongoose.Types.ObjectId.isValid(roomId)) {
+    return res.status(400).json({ message: 'Invalid room ID' });
+  }
+
+  const hotel = await Hotel.findOne({ 'rooms._id': roomId });
+
+  if (!hotel) {
+    return res.status(404).json({ message: 'Room not found' });
+  }
+
+  const room = hotel.rooms.id(roomId);
+
+  if (!room) {
+    return res.status(404).json({ message: 'Room not found' });
+  }
+
+  res.json({ hotel, room });
+});
+
 // hotelController.js - Unified available rooms function
 exports.getAvailableRooms = asyncHandler(async (req, res) => {
   const { checkIn, checkOut, roomType, guests } = req.query;

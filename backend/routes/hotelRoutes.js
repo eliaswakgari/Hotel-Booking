@@ -12,6 +12,7 @@ const {
   getAvailableRooms,
   updateRoom,
   addRoom,
+  getRoomById,
 } = require('../controllers/hotelController');
 
 const handleUpload = upload.fields([
@@ -24,22 +25,23 @@ const roomUpload = upload.fields([
 ]);
 
 // ✅ MUST COME FIRST
+// MUST COME FIRST — PUBLIC
 router.get('/rooms/available', getAvailableRooms);
+router.get('/rooms/:roomId', getRoomById);
 router.get('/:id/available-rooms', getAvailableRooms);
 
-// Public hotel routes
+// THEN HOTEL ROUTES
 router.route('/')
   .post(protect, admin, handleUpload, createHotel)
   .get(getHotels);
 
-// Hotel by ID
+// ALWAYS PUT LAST — catches only valid IDs
 router.route('/:id')
   .get(getHotelById)
   .put(protect, admin, handleUpload, updateHotel)
   .delete(protect, admin, deleteHotel);
 
-// Room creation + update
+// ROOMS
 router.post('/:hotelId/rooms', protect, admin, roomUpload, addRoom);
 router.put('/:hotelId/rooms/:roomId', protect, admin, roomUpload, updateRoom);
-
 module.exports = router;

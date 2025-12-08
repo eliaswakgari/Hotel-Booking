@@ -153,6 +153,11 @@ const Login = () => {
       if (event.origin !== backendOrigin) return;
       const { user: googleUser, token } = event.data;
       if (googleUser && token) {
+        // Persist token for subsequent authenticated API calls
+        try {
+          localStorage.setItem("authToken", token);
+        } catch (_) { }
+
         dispatch(setUser(googleUser));
         Swal.fire("Success", "Google login successful!", "success");
         navigateByRole(googleUser);

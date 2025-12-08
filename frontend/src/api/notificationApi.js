@@ -1,14 +1,22 @@
 // api/notificationApi.js
 import axios from "axios";
 
+const isLocalhost = typeof window !== "undefined" && window.location.hostname === "localhost";
+
 const API = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || "http://localhost:5000/api",
+  baseURL: isLocalhost
+    ? "http://localhost:5000/api"
+    : import.meta.env.VITE_API_URL
+      ? `${import.meta.env.VITE_API_URL}/api`
+      : "http://localhost:5000/api",
   withCredentials: true,
 });
 
 // Add request interceptor for token
 API.interceptors.request.use((config) => {
-  const token = getCookie('token');
+  const cookieToken = getCookie('token');
+  const storedToken = typeof window !== 'undefined' ? localStorage.getItem('authToken') : null;
+  const token = cookieToken || storedToken;
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
@@ -24,14 +32,12 @@ const getCookie = (name) => {
   return null;
 };
 
-// Response interceptor to handle auth errors
+// Response interceptor to handle auth errors (silent for 401)
 API.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
-      console.error('Authentication failed');
-      window.location.href = '/login';
-    }
+    // For notifications, a 401 usually just means the user isn't authenticated yet.
+    // Don't spam the console; let callers handle if they care.
     return Promise.reject(error);
   }
 );

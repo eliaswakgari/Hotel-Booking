@@ -153,7 +153,7 @@ const AppRoutes = () => {
           {/* 🌍 Public Routes */}
           <Route path="/" element={<Home />} />
           <Route path="/hotels" element={<Navigate to="/" replace />} />
-          <Route path="/hotel/:id" element={<HotelDetail />} />
+          <Route path="/room/:id" element={<HotelDetail />} />
 
           {/* 🔑 Auth Routes */}
           <Route

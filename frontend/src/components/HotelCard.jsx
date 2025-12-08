@@ -29,7 +29,7 @@ const HotelCard = ({ roomData, hotel: hotelProp }) => {
     e.stopPropagation();
     // Navigate with room ID in URL when available, otherwise just hotel
     if (room?._id) {
-      navigate(`/hotel/${hotel._id}?room=${room._id}`);
+      navigate(`/room/${room._id}`);
     } else {
       navigate(`/hotel/${hotel._id}`);
     }
@@ -37,14 +37,11 @@ const HotelCard = ({ roomData, hotel: hotelProp }) => {
 
   const handleCardClick = () => {
     // Navigate to hotel details when clicking anywhere on the card
-    navigate(`/hotel/${hotel._id}`, {
-      state: room?._id
-        ? {
-          roomId: room._id,
-          roomData: roomData,
-        }
-        : undefined,
-    });
+    if (room?._id) {
+      navigate(`/room/${room._id}`);
+    } else {
+      navigate(`/hotel/${hotel._id}`);
+    }
   };
 
   const toggleFavorite = (e) => {

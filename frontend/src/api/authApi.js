@@ -2,10 +2,15 @@
 import axios from "axios";
 
 // Base axios instance
+const isLocalhost = typeof window !== "undefined" && window.location.hostname === "localhost";
+
 const API = axios.create({
-  baseURL: import.meta.env.VITE_API_URL
-  ? `${import.meta.env.VITE_API_URL}/api/auth`
-  : "http://localhost:5000/api/auth",
+  // In local dev, always talk to local backend regardless of VITE_API_URL
+  baseURL: isLocalhost
+    ? "http://localhost:5000/api/auth"
+    : import.meta.env.VITE_API_URL
+      ? `${import.meta.env.VITE_API_URL}/api/auth`
+      : "http://localhost:5000/api/auth",
   withCredentials: true,
 });
 
