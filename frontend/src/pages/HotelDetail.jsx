@@ -11,6 +11,7 @@ import Swal from "sweetalert2";
 import { io } from "socket.io-client";
 import { Star } from "lucide-react";
 import BookingForm from "../components/BookingForm";
+import { fetchRoomById } from "../api/hotelApi";
 
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY);
 
@@ -27,7 +28,7 @@ const HotelDetail = () => {
   } = useQuery({
     queryKey: ["room", id],
     queryFn: async () => {
-      const { data } = await axios.get(`/api/hotels/rooms/${id}`);
+      const { data } = await fetchRoomById(id);
       return { hotel: data.hotel || {}, room: data.room || null };
     },
     staleTime: 5 * 60 * 1000,
