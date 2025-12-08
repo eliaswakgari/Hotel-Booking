@@ -3,6 +3,8 @@ import axios from "axios";
 // Prefer local backend when running on localhost
 const isLocalhost = typeof window !== "undefined" && window.location.hostname === "localhost";
 
+// In dev: http://localhost:5000/api/bookings
+// In prod: `${VITE_API_URL}/api/bookings` where VITE_API_URL is the backend root (e.g. https://hotel-booking-5-tp2l.onrender.com)
 const API = axios.create({
   baseURL: isLocalhost
     ? "http://localhost:5000/api/bookings"
@@ -12,21 +14,16 @@ const API = axios.create({
   withCredentials: true,
 });
 
-// Add request interceptor to include token in headers
+// Add request interceptor to include token in headers via cookie (backend primarily relies on httpOnly cookie)
 API.interceptors.request.use(
   (config) => {
     const token = getCookie('token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
-      console.log(' Token added to request');
-    } else {
-      console.warn(' No token found in cookies');
     }
     return config;
   },
-  (error) => {
-    return Promise.reject(error);
-  }
+  (error) => Promise.reject(error)
 );
 
 // Helper function to get cookie
@@ -38,16 +35,10 @@ const getCookie = (name) => {
   return null;
 };
 
-// Response interceptor to handle auth errors
+// Response interceptor: just pass errors through; individual pages will handle 401s
 API.interceptors.response.use(
   (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
-      console.error(' Authentication failed');
-      window.location.href = '/login';
-    }
-    return Promise.reject(error);
-  }
+  (error) => Promise.reject(error)
 );
 
 // Get user's bookings (hits GET /api/bookings/my-bookings)
