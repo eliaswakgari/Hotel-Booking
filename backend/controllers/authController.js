@@ -5,12 +5,12 @@ const generateToken = require('../utils/generateToken');
 const crypto = require('crypto');
 const sendEmail = require('../utils/sendEmail');
 
-const isProduction = process.env.NODE_ENV === 'production';
+const hasHostedClient = !!(process.env.CLIENT_URL && process.env.CLIENT_URL.startsWith('https://'));
 
 const authCookieOptions = {
   httpOnly: true,
-  secure: isProduction, // required for cross-site cookies over HTTPS
-  sameSite: isProduction ? 'none' : 'lax', // allow Vercel -> Render
+  secure: hasHostedClient,
+  sameSite: hasHostedClient ? 'none' : 'lax',
 };
 
 // ---------------- REGISTER ----------------
