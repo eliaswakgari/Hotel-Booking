@@ -30,8 +30,6 @@ const HotelCard = ({ roomData, hotel: hotelProp }) => {
     // Navigate with room ID in URL when available, otherwise just hotel
     if (room?._id) {
       navigate(`/room/${room._id}`);
-    } else {
-      navigate(`/hotel/${hotel._id}`);
     }
   };
 
@@ -39,8 +37,6 @@ const HotelCard = ({ roomData, hotel: hotelProp }) => {
     // Navigate to hotel details when clicking anywhere on the card
     if (room?._id) {
       navigate(`/room/${room._id}`);
-    } else {
-      navigate(`/hotel/${hotel._id}`);
     }
   };
 

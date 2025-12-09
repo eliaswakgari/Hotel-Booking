@@ -58,7 +58,8 @@ exports.getAvailableRooms = asyncHandler(async (req, res) => {
           price: room.price || hotel.basePrice,
           hotelBasePrice: hotel.basePrice,
           maxGuests: room.maxGuests || 2,
-          roomImages: room.roomImages || []
+          roomImages: room.roomImages || [],
+          amenities: room.amenities || []
         });
       }
     } catch (error) {
@@ -265,7 +266,12 @@ exports.createHotel = asyncHandler(async (req, res) => {
           status: room.status || "available",
           price: room.price || basePrice,
           maxGuests: room.maxGuests || 2,
-          roomImages: room.roomImages || [] // Use room.roomImages if provided
+          roomImages: room.roomImages || [], // Use room.roomImages if provided
+          amenities: Array.isArray(room.amenities)
+            ? room.amenities
+            : (typeof room.amenities === 'string' && room.amenities.trim()
+              ? room.amenities.split(',').map(a => a.trim()).filter(Boolean)
+              : [])
         };
       });
     }
@@ -328,7 +334,6 @@ exports.createHotel = asyncHandler(async (req, res) => {
 
   getIO().emit("hotelCreated", hotel);
   await clearHotelCache(hotel._id);
-  res.status(201).json(hotel);
 });
 
 // UPDATE hotel
@@ -344,13 +349,15 @@ exports.updateHotel = asyncHandler(async (req, res) => {
     name,
     basePrice,
     maxGuests,
-    roomType
+    roomType,
+    contact,
   } = req.body;
 
   try {
     if (typeof location === "string") location = JSON.parse(location);
     if (typeof rooms === "string") rooms = JSON.parse(rooms);
     if (typeof pricingRules === "string") pricingRules = JSON.parse(pricingRules);
+    if (typeof contact === "string") contact = JSON.parse(contact);
   } catch (err) {
     return res.status(400).json({ message: "Invalid JSON format in request body" });
   }
@@ -418,7 +425,12 @@ exports.updateHotel = asyncHandler(async (req, res) => {
         status: room.status || "available",
         price: room.price || hotel.basePrice,
         maxGuests: room.maxGuests || 2,
-        roomImages: roomImages // Keep existing images
+        roomImages: roomImages, // Keep existing images
+        amenities: Array.isArray(room.amenities)
+          ? room.amenities
+          : (typeof room.amenities === 'string' && room.amenities.trim()
+            ? room.amenities.split(',').map(a => a.trim()).filter(Boolean)
+            : [])
       });
     }
 
@@ -477,6 +489,15 @@ exports.updateHotel = asyncHandler(async (req, res) => {
   hotel.pricingRules = pricingRules && pricingRules.length > 0 ? pricingRules : hotel.pricingRules;
   hotel.images = mergedHotelImages;
 
+  // Apply contact updates (phone, email) if provided
+  if (contact && typeof contact === 'object') {
+    hotel.contact = {
+      ...(hotel.contact || {}),
+      ...(contact.phone !== undefined ? { phone: contact.phone } : {}),
+      ...(contact.email !== undefined ? { email: contact.email } : {}),
+    };
+  }
+
   const updatedHotel = await hotel.save();
 
   const io = getIO();
@@ -489,7 +510,7 @@ exports.updateHotel = asyncHandler(async (req, res) => {
 // CREATE individual room with images
 exports.addRoom = asyncHandler(async (req, res) => {
   const { hotelId } = req.params;
-  const { number, type, status, price, maxGuests, description } = req.body;
+  const { number, type, status, price, maxGuests, description, amenities } = req.body;
 
   const hotel = await Hotel.findById(hotelId);
   if (!hotel) {
@@ -530,6 +551,7 @@ exports.addRoom = asyncHandler(async (req, res) => {
     price: price ? parseFloat(price) : hotel.basePrice,
     maxGuests: maxGuests ? parseInt(maxGuests) : 2,
     roomImages: uploadedImages,
+    amenities: amenities ? amenities.split(',').map(a => a.trim()).filter(Boolean) : []
   };
 
   hotel.rooms.push(newRoom);
@@ -554,7 +576,7 @@ exports.addRoom = asyncHandler(async (req, res) => {
 // UPDATE individual room with images
 exports.updateRoom = asyncHandler(async (req, res) => {
   const { hotelId, roomId } = req.params;
-  const { number, type, status, price, maxGuests, description } = req.body;
+  const { number, type, status, price, maxGuests, description, amenities } = req.body;
 
   const hotel = await Hotel.findById(hotelId);
   if (!hotel) {
@@ -595,6 +617,7 @@ exports.updateRoom = asyncHandler(async (req, res) => {
   if (status) room.status = status;
   if (price) room.price = parseFloat(price);
   if (maxGuests) room.maxGuests = parseInt(maxGuests);
+  if (amenities) room.amenities = amenities ? amenities.split(',').map(a => a.trim()).filter(Boolean) : [];
   
   // Update images if new ones were uploaded
   if (uploadedImages.length > 0) {
@@ -759,10 +782,10 @@ exports.getRoomById = asyncHandler(async (req, res) => {
     return res.status(404).json({ message: 'Room not found' });
   }
 
-  res.json({ hotel, room });
+  return res.json({ hotel, room });
 });
 
-// hotelController.js - Unified available rooms function
+// GET available rooms
 exports.getAvailableRooms = asyncHandler(async (req, res) => {
   const { checkIn, checkOut, roomType, guests } = req.query;
 
@@ -770,21 +793,18 @@ exports.getAvailableRooms = asyncHandler(async (req, res) => {
   const hotelIdParam = req.params.id || null;
 
   try {
-    // If no dates provided, show rooms that are marked available AND have no
-    // overlapping pending/confirmed bookings for the current period.
+    // If no dates are provided, show all rooms that are marked as available
+    // and have no overlapping bookings in a default window: today -> 1 year.
     if (!checkIn || !checkOut) {
-      // Determine which hotels to search: all or a specific one
       const hotelQuery = hotelIdParam ? { _id: hotelIdParam } : {};
 
-      const hotels = await Hotel.find(hotelQuery)
-        .populate({
-          path: 'reviews.user',
-          select: 'name profileImage'
-        });
+      const hotels = await Hotel.find(hotelQuery).populate({
+        path: 'reviews.user',
+        select: 'name profileImage',
+      });
 
       const availableRooms = [];
 
-      // Compute per-room rating stats for these hotels
       const hotelIds = hotels.map((h) => h._id);
       const roomRatingsAgg = await Review.aggregate([
         { $match: { hotel: { $in: hotelIds } } },
@@ -808,7 +828,6 @@ exports.getAvailableRooms = asyncHandler(async (req, res) => {
         });
       });
 
-      // Define a default date window: today -> 1 year from now
       const today = new Date();
       const oneYearLater = new Date(today);
       oneYearLater.setFullYear(oneYearLater.getFullYear() + 1);
@@ -818,15 +837,13 @@ exports.getAvailableRooms = asyncHandler(async (req, res) => {
 
       for (const hotel of hotels) {
         for (const room of hotel.rooms) {
-          // Only consider rooms explicitly marked as available
           if (room.status !== 'available') continue;
 
-          // Check that there are no overlapping pending/confirmed bookings
           const isAvailable = await checkRoomAvailability(
             hotel._id,
             room.number,
             todayISO,
-            oneYearLaterISO
+            oneYearLaterISO,
           );
 
           if (!isAvailable) continue;
@@ -844,7 +861,8 @@ exports.getAvailableRooms = asyncHandler(async (req, res) => {
               amenities: hotel.amenities,
               images: hotel.images,
               reviews: hotel.reviews,
-              averageRating: hotel.averageRating
+              averageRating: hotel.averageRating,
+              contact: hotel.contact,
             },
             room: {
               _id: room._id,
@@ -856,7 +874,7 @@ exports.getAvailableRooms = asyncHandler(async (req, res) => {
               roomImages: room.roomImages || [],
               averageRating: ratingInfo ? ratingInfo.averageRating : 0,
               totalReviews: ratingInfo ? ratingInfo.totalReviews : 0,
-            }
+            },
           });
         }
       }
@@ -867,34 +885,36 @@ exports.getAvailableRooms = asyncHandler(async (req, res) => {
         message: 'All available rooms',
         filters: {
           roomType: roomType || 'All',
-          guests: guests || 'Any'
-        }
+          guests: guests || 'Any',
+        },
       });
     }
 
-    // If dates provided, check availability within that range
+    // If dates are provided, check availability within that specific range.
     const checkInDate = new Date(checkIn);
     const checkOutDate = new Date(checkOut);
 
     if (checkInDate >= checkOutDate) {
-      return res.status(400).json({ message: "Check-out date must be after check-in date" });
+      return res
+        .status(400)
+        .json({ message: 'Check-out date must be after check-in date' });
     }
 
     if (checkInDate < new Date().setHours(0, 0, 0, 0)) {
-      return res.status(400).json({ message: "Check-in date cannot be in the past" });
+      return res
+        .status(400)
+        .json({ message: 'Check-in date cannot be in the past' });
     }
 
     const hotelQuery = hotelIdParam ? { _id: hotelIdParam } : {};
 
-    const hotels = await Hotel.find(hotelQuery)
-      .populate({
-        path: 'reviews.user',
-        select: 'name profileImage'
-      });
+    const hotels = await Hotel.find(hotelQuery).populate({
+      path: 'reviews.user',
+      select: 'name profileImage',
+    });
 
     const availableRooms = [];
 
-    // Compute per-room rating stats for these hotels
     const hotelIds = hotels.map((h) => h._id);
     const roomRatingsAgg = await Review.aggregate([
       { $match: { hotel: { $in: hotelIds } } },
@@ -920,21 +940,17 @@ exports.getAvailableRooms = asyncHandler(async (req, res) => {
 
     for (const hotel of hotels) {
       for (const room of hotel.rooms) {
-        // Skip if room is not available by status
         if (room.status !== 'available') continue;
 
-        // Skip if room type doesn't match filter
         if (roomType && roomType !== 'All' && room.type !== roomType) continue;
 
-        // Skip if room doesn't have enough capacity
-        if (guests && room.maxGuests < parseInt(guests)) continue;
+        if (guests && room.maxGuests < parseInt(guests, 10)) continue;
 
-        // Check booking availability for the requested dates
         const isAvailable = await checkRoomAvailability(
           hotel._id,
           room.number,
           checkIn,
-          checkOut
+          checkOut,
         );
 
         if (!isAvailable) continue;
@@ -952,7 +968,8 @@ exports.getAvailableRooms = asyncHandler(async (req, res) => {
             amenities: hotel.amenities,
             images: hotel.images,
             reviews: hotel.reviews,
-            averageRating: hotel.averageRating
+            averageRating: hotel.averageRating,
+            contact: hotel.contact,
           },
           room: {
             _id: room._id,
@@ -964,24 +981,26 @@ exports.getAvailableRooms = asyncHandler(async (req, res) => {
             roomImages: room.roomImages || [],
             averageRating: ratingInfo ? ratingInfo.averageRating : 0,
             totalReviews: ratingInfo ? ratingInfo.totalReviews : 0,
-          }
+          },
         });
       }
     }
 
-    res.json({
+    return res.json({
       availableRooms,
       totalRooms: availableRooms.length,
       checkIn,
       checkOut,
       filters: {
         roomType: roomType || 'All',
-        guests: guests || 'Any'
-      }
+        guests: guests || 'Any',
+      },
     });
-
   } catch (error) {
     console.error('Error fetching available rooms:', error);
-    res.status(500).json({ message: 'Error fetching available rooms', error: error.message });
+    return res.status(500).json({
+      message: 'Error fetching available rooms',
+      error: error.message,
+    });
   }
 });

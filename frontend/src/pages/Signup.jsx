@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useDispatch } from "react-redux";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { registerUser } from "../features/auth/authThunks";
 import GuestLayout from "../layouts/GuestLayout";
 import Swal from "sweetalert2";
@@ -20,36 +20,37 @@ const Signup = () => {
 
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-const handleSubmit = async (e) => {
-  e.preventDefault();
-  const { name, email, password, confirmPassword } = formData;
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    const { name, email, password, confirmPassword } = formData;
 
-  if (password !== confirmPassword) {
-    return Swal.fire("Error", "Passwords do not match", "error");
-  }
+    if (password !== confirmPassword) {
+      return Swal.fire("Error", "Passwords do not match", "error");
+    }
 
-  try {
-    await dispatch(registerUser({ name, email, password })).unwrap();
+    try {
+      await dispatch(registerUser({ name, email, password })).unwrap();
 
-    // ✅ Show success message first, then redirect to login
-    Swal.fire({
-      title: "Success",
-      text: "Registered successfully! Please login to continue.",
-      icon: "success",
-      confirmButtonText: "Go to Login",
-      confirmButtonColor: "#2563eb",
-    }).then(() => {
-      navigate("/login"); // Redirect after alert confirmation
-    });
-  } catch (error) {
-    Swal.fire("Error", error?.message || "Registration failed", "error");
-  }
-};
+      // ✅ Show success message first, then redirect to login
+      Swal.fire({
+        title: "Success",
+        text: "Registered successfully! Please login to continue.",
+        icon: "success",
+        confirmButtonText: "Go to Login",
+        confirmButtonColor: "#2563eb",
+      }).then(() => {
+        navigate("/login", { state: location.state || {} }); // Redirect after alert confirmation, preserving redirect info
+      });
+    } catch (error) {
+      Swal.fire("Error", error?.message || "Registration failed", "error");
+    }
+  };
 
 
   const handleGoogleLogin = () => {

@@ -94,9 +94,19 @@ const HotelDetail = () => {
         cancelButtonText: "Continue Browsing",
       }).then((result) => {
         if (result.isConfirmed) {
+          try {
+            window.sessionStorage.setItem(
+              "postAuthRedirect",
+              JSON.stringify({ redirectTo: `/room/${id}`, openBooking: true })
+            );
+          } catch (e) {
+            // ignore storage errors
+          }
+
           navigate("/login", {
             state: {
               redirectTo: `/room/${id}`,
+              openBooking: true,
               message: "Please log in to book your room",
             },
           });
@@ -243,8 +253,34 @@ const HotelDetail = () => {
                   </div>
                   <div className="ml-3">
                     <p className="text-sm text-yellow-700 dark:text-yellow-300">
-                      You need to <button onClick={() => navigate("/login")} className="underline font-medium">log in</button> to book a room.{" "}
-                      <button onClick={() => navigate("/register")} className="underline font-medium">Create an account</button> if you don't have one.
+                      You need to <button
+                        onClick={() => {
+                          try {
+                            window.sessionStorage.setItem(
+                              "postAuthRedirect",
+                              JSON.stringify({ redirectTo: `/room/${id}`, openBooking: true })
+                            );
+                          } catch (e) { }
+                          navigate("/login", { state: { redirectTo: `/room/${id}`, openBooking: true } });
+                        }}
+                        className="underline font-medium"
+                      >
+                        log in
+                      </button> to book a room.{" "}
+                      <button
+                        onClick={() => {
+                          try {
+                            window.sessionStorage.setItem(
+                              "postAuthRedirect",
+                              JSON.stringify({ redirectTo: `/room/${id}`, openBooking: true })
+                            );
+                          } catch (e) { }
+                          navigate("/signup", { state: { redirectTo: `/room/${id}`, openBooking: true } });
+                        }}
+                        className="underline font-medium"
+                      >
+                        Create an account
+                      </button> if you don't have one.
                     </p>
                   </div>
                 </div>

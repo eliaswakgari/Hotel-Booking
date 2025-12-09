@@ -1,7 +1,8 @@
 // src/pages/Login.jsx
 import React, { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, useLocation, Link } from "react-router-dom";
+
 import GuestLayout from "../layouts/GuestLayout";
 import Swal from "sweetalert2";
 import { FcGoogle } from "react-icons/fc";
@@ -22,6 +23,7 @@ const Login = () => {
 
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const { user, loading, error, validationErrors } = useSelector((state) => state.auth);
 
@@ -89,10 +91,38 @@ const Login = () => {
   }, [formData]);
 
   // ===============================
-  // Navigate by role after login
+  // Navigate after login (respect redirect target if provided)
   // ===============================
   const navigateByRole = (user) => {
     if (!user) return;
+
+    let redirectState = location.state || {};
+
+    // Also check sessionStorage in case state was lost during navigation
+    try {
+      const stored = window.sessionStorage.getItem("postAuthRedirect");
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        redirectState = { ...redirectState, ...parsed };
+        window.sessionStorage.removeItem("postAuthRedirect");
+      }
+    } catch (e) {
+      // ignore storage errors
+    }
+
+    const redirectTo = redirectState.redirectTo;
+
+    if (redirectTo) {
+      navigate(redirectTo, {
+        replace: true,
+        state: {
+          ...redirectState,
+          openBooking: redirectState.openBooking ?? true,
+        },
+      });
+      return;
+    }
+
     switch (user.role) {
       case "admin":
         navigate("/admin");
@@ -147,6 +177,10 @@ const Login = () => {
   // ===============================
   useEffect(() => {
     const handleMessage = (event) => {
+      console.log("[Google OAuth] message received", {
+        origin: event.origin,
+        data: event.data,
+      });
       try {
         const backendOrigin = new URL(import.meta.env.VITE_API_URL).origin;
         if (event.origin !== backendOrigin) return;
@@ -156,6 +190,7 @@ const Login = () => {
 
       const { user: googleUser, token } = event.data || {};
       if (googleUser && token) {
+        console.log("[Google OAuth] valid payload received, logging in user");
         try {
           localStorage.setItem("authToken", token);
         } catch {
@@ -335,6 +370,7 @@ const Login = () => {
           <div className="flex justify-between items-center mt-6 text-sm text-white/80">
             <Link
               to="/signup"
+              state={location.state}
               className="hover:text-white underline transition duration-200"
             >
               Don't have an account? Register

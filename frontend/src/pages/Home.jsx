@@ -306,29 +306,9 @@ const Home = () => {
                 </div>
               </div>
 
-              <div className="hidden md:block w-px h-8 bg-gray-200 mx-1" />
-
-              <div className="flex-1 flex items-center gap-2 px-3 py-2 rounded-full hover:bg-gray-50/80 transition">
-                <FaCalendarAlt className="text-gray-500" />
-                <div className="flex flex-col">
-                  <span className="text-[11px] uppercase tracking-wide font-semibold text-gray-400">Check-in / Check-out</span>
-                  <span className="text-sm text-gray-700">Add dates</span>
-                </div>
-              </div>
-
-              <div className="hidden md:block w-px h-8 bg-gray-200 mx-1" />
-
-              <div className="flex-1 flex items-center gap-2 px-3 py-2 rounded-full hover:bg-gray-50/80 transition">
-                <FaUser className="text-gray-500" />
-                <div className="flex flex-col">
-                  <span className="text-[11px] uppercase tracking-wide font-semibold text-gray-400">Guests</span>
-                  <span className="text-sm text-gray-700">Add guests</span>
-                </div>
-              </div>
-
-              <div className="mt-2 md:mt-0 flex justify-end">
+              <div className="mt-2 md:mt-0 flex justify-end md:ml-2">
                 <button
-                  className="inline-flex items-center justify-center bg-blue-600 hover:bg-blue-700 text-white rounded-full px-5 py-2.5 text-sm font-semibold shadow-md transition"
+                  className="inline-flex items-center justify-center bg-blue-600 hover:bg-blue-700 text-white rounded-full px-6 py-2.5 text-sm font-semibold shadow-md transition w-full md:w-auto"
                 >
                   Explore stays
                 </button>
@@ -338,22 +318,41 @@ const Home = () => {
         </motion.div>
       </section>
 
-      {/* Room Type Filter Buttons */}
+      {/* Room Type Filter: dropdown on small screens, chips on desktop */}
       {availableRooms.length > 0 && (
-        <div className="flex justify-center gap-4 flex-wrap mt-12 px-4">
-          {roomTypes.map((type) => (
-            <button
-              key={type}
-              className={`px-6 py-2 rounded-full font-semibold transition ${selectedRoomType === type
-                ? "bg-blue-600 text-white shadow-lg"
-                : "bg-gray-200 text-gray-800 hover:bg-gray-300"
-                }`}
-              onClick={() => setSelectedRoomType(type)}
+        <>
+          {/* Mobile dropdown */}
+          <div className="mt-8 px-4 md:hidden">
+            <label className="block text-sm font-medium text-gray-700 mb-1">Room type</label>
+            <select
+              value={selectedRoomType}
+              onChange={(e) => setSelectedRoomType(e.target.value)}
+              className="w-full rounded-full border border-gray-300 bg-white px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             >
-              {type} {type !== "All" && `(${roomsByType[type]?.length || 0})`}
-            </button>
-          ))}
-        </div>
+              {roomTypes.map((type) => (
+                <option key={type} value={type}>
+                  {type} {type !== "All" && `(${roomsByType[type]?.length || 0})`}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Desktop chips */}
+          <div className="hidden md:flex justify-center gap-4 flex-wrap mt-12 px-4">
+            {roomTypes.map((type) => (
+              <button
+                key={type}
+                className={`px-6 py-2 rounded-full font-semibold transition ${selectedRoomType === type
+                  ? "bg-blue-600 text-white shadow-lg"
+                  : "bg-gray-200 text-gray-800 hover:bg-gray-300"
+                  }`}
+                onClick={() => setSelectedRoomType(type)}
+              >
+                {type} {type !== "All" && `(${roomsByType[type]?.length || 0})`}
+              </button>
+            ))}
+          </div>
+        </>
       )}
 
       {/* Horizontal Scrolling Rooms Display */}
@@ -415,29 +414,34 @@ const Home = () => {
                       </p>
                     </div>
 
-                    {/* Navigation Arrows */}
-                    <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button
-                        onClick={() => scrollLeft(roomType)}
-                        className="p-2 rounded-full bg-white shadow-lg border border-gray-200 hover:bg-gray-50 transition"
-                      >
-                        <FaChevronLeft className="text-gray-600" />
-                      </button>
-                      <button
-                        onClick={() => scrollRight(roomType)}
-                        className="p-2 rounded-full bg-white shadow-lg border border-gray-200 hover:bg-gray-50 transition"
-                      >
-                        <FaChevronRight className="text-gray-600" />
-                      </button>
+                    {/* Small hint text instead of header arrows */}
+                    <div className="text-xs text-gray-400 hidden md:block">
+                      Swipe or use arrows
                     </div>
                   </div>
 
                   {/* Horizontal Scrolling Container */}
                   <div className="relative">
+                    {/* Centered navigation arrows over the carousel */}
+                    <button
+                      type="button"
+                      onClick={() => scrollLeft(roomType)}
+                      className="hidden md:flex items-center justify-center absolute left-3 top-1/2 -translate-y-1/2 z-20 w-11 h-11 rounded-full bg-white/95 shadow-xl border border-blue-500/60 hover:bg-blue-50 transition group-hover:opacity-100 opacity-0"
+                    >
+                      <span className="text-xl font-bold text-blue-600 leading-none">{"<"}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => scrollRight(roomType)}
+                      className="hidden md:flex items-center justify-center absolute right-3 top-1/2 -translate-y-1/2 z-20 w-11 h-11 rounded-full bg-white/95 shadow-xl border border-blue-500/60 hover:bg-blue-50 transition group-hover:opacity-100 opacity-0"
+                    >
+                      <span className="text-xl font-bold text-blue-600 leading-none">{">"}</span>
+                    </button>
+
                     <div
                       ref={(el) => setScrollRef(roomType, el)}
                       className="flex gap-6 overflow-x-auto scrollbar-hide pb-6 scroll-smooth"
-                      style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+                      style={{ scrollbarWidth: 'none', msOverflowStyle: 'none', scrollBehavior: 'smooth' }}
                     >
                       {typeRooms.map((roomData, idx) => {
                         const hotel = roomData.hotel;
