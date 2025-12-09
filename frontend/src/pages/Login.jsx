@@ -143,26 +143,47 @@ const Login = () => {
   };
 
   // ===============================
-  // Handle Google Login
+  // Google login - popup + postMessage
   // ===============================
-  const handleGoogleLogin = () => {
-    window.open(`${import.meta.env.VITE_API_URL}/api/auth/google`, "_self");
+  useEffect(() => {
+    const handleMessage = (event) => {
+      try {
+        const backendOrigin = new URL(import.meta.env.VITE_API_URL).origin;
+        if (event.origin !== backendOrigin) return;
+      } catch {
+        return;
+      }
 
-    window.addEventListener("message", (event) => {
-      const backendOrigin = new URL(import.meta.env.VITE_API_URL).origin;
-      if (event.origin !== backendOrigin) return;
-      const { user: googleUser, token } = event.data;
+      const { user: googleUser, token } = event.data || {};
       if (googleUser && token) {
-        // Persist token for subsequent authenticated API calls
         try {
           localStorage.setItem("authToken", token);
-        } catch (_) { }
+        } catch {
+          // ignore storage errors
+        }
 
         dispatch(setUser(googleUser));
         Swal.fire("Success", "Google login successful!", "success");
         navigateByRole(googleUser);
       }
-    });
+    };
+
+    window.addEventListener("message", handleMessage);
+    return () => window.removeEventListener("message", handleMessage);
+  }, [dispatch]);
+
+  const handleGoogleLogin = () => {
+    const authUrl = `${import.meta.env.VITE_API_URL}/api/auth/google`;
+    const width = 500;
+    const height = 600;
+    const left = window.screenX + (window.outerWidth - width) / 2;
+    const top = window.screenY + (window.outerHeight - height) / 2;
+
+    window.open(
+      authUrl,
+      "google_auth_popup",
+      `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes,status=yes`
+    );
   };
 
   // ===============================
