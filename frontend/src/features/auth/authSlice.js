@@ -57,12 +57,15 @@ const authSlice = createSlice({
       })
       .addCase(registerUser.fulfilled, (s, a) => {
         s.loading = false;
-        s.user = a.payload.data;
         s.validationErrors = [];
 
-        // Persist token for subsequent API calls if present
-        if (a.payload?.data?.token) {
-          localStorage.setItem('authToken', a.payload.data.token);
+        // Ensure we do not auto-login after signup; require explicit login
+        try {
+          if (typeof window !== 'undefined') {
+            window.localStorage.removeItem('authToken');
+          }
+        } catch (e) {
+          // ignore storage errors
         }
       })
       .addCase(registerUser.rejected, (s, a) => {
