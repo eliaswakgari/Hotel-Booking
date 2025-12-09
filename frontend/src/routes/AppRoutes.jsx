@@ -1,8 +1,7 @@
 import React, { Suspense, lazy, useState, useEffect } from "react";
 import { Routes, Route, Navigate, useLocation } from "react-router-dom";
-import { useSelector, useDispatch } from "react-redux";
+import { useSelector } from "react-redux";
 import { motion } from "framer-motion";
-import { fetchProfile } from "../features/auth/authThunks";
 
 // Add this to your main App.js or index.js to suppress the warning temporarily
 const originalError = console.error;
@@ -90,33 +89,9 @@ const Loader = () => {
 
 const AppRoutes = () => {
   const { user, loading } = useSelector((state) => state.auth);
-  const dispatch = useDispatch();
-  const [checkingAuth, setCheckingAuth] = useState(true);
   const location = useLocation();
 
-  // ✅ Fetch user profile when app loads or refreshes - with better error handling
-  useEffect(() => {
-    const loadProfile = async () => {
-      try {
-        await dispatch(fetchProfile()).unwrap();
-      } catch (err) {
-        // Silently handle auth errors - don't show them in console
-        if (err?.message?.includes('Admin access only') ||
-          err?.message?.includes('Authentication') ||
-          err?.message?.includes('Unauthorized')) {
-          // This is normal for unauthenticated users
-          console.log('User not authenticated - this is normal for public access');
-        } else {
-          console.warn("Profile fetch error:", err?.message || "Unknown error");
-        }
-      } finally {
-        setCheckingAuth(false);
-      }
-    };
-    loadProfile();
-  }, [dispatch]);
-
-  if (checkingAuth || loading) return <Loader />;
+  if (loading) return <Loader />;
 
   // ✅ Role-based guards
   const AdminRoute = ({ children }) => {
