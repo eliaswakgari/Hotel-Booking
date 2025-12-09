@@ -6,8 +6,14 @@ const isLocalhost = typeof window !== "undefined" && window.location.hostname ==
 // In dev: http://localhost:5000/api/bookings
 // In prod: `${backendBase}/api/bookings` where VITE_API_URL may be with or without `/api`
 const resolveBackendBase = () => {
-  const raw = import.meta.env.VITE_API_URL;
+  let raw = import.meta.env.VITE_API_URL;
+
+  if (!raw && typeof window !== "undefined") {
+    raw = window.location.origin;
+  }
+
   if (!raw) return "";
+
   let base = raw.replace(/\/+$/, "");
   // If user accidentally includes /api in VITE_API_URL, strip it
   if (base.endsWith("/api")) {
@@ -23,7 +29,7 @@ const API = axios.create({
     ? "http://localhost:5000/api/bookings"
     : backendBase
       ? `${backendBase}/api/bookings`
-      : "http://localhost:5000/api/bookings",
+      : "",
   withCredentials: true,
 });
 

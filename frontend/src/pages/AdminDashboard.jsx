@@ -73,8 +73,8 @@ const StatCard = ({ title, value, change, icon, color = "purple", delay = 0, sub
             )}
             {change !== undefined && (
               <div className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${change > 0
-                  ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'
-                  : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'
+                ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'
+                : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'
                 }`}>
                 {change > 0 ? <FiArrowUp size={12} /> : <FiArrowDown size={12} />}
                 {Math.abs(change)}%
@@ -98,7 +98,16 @@ const AdminDashboard = () => {
 
   // Normalize backend base for sockets (works for local and hosted envs)
   const socketBase = React.useMemo(() => {
-    const raw = import.meta.env.VITE_API_URL || "http://localhost:5000";
+    let raw = import.meta.env.VITE_API_URL;
+
+    if (!raw && typeof window !== "undefined") {
+      raw = window.location.origin;
+    }
+
+    if (!raw) {
+      raw = "http://localhost:5000";
+    }
+
     let base = raw.replace(/\/+$/, "");
     if (base.endsWith("/api")) {
       base = base.slice(0, -4);
@@ -260,8 +269,8 @@ const AdminDashboard = () => {
                   dispatch(fetchAnalytics(range));
                 }}
                 className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-300 ${timeRange === range
-                    ? 'bg-gradient-to-r from-purple-500 to-blue-600 text-white shadow-lg'
-                    : 'text-gray-600 dark:text-gray-400 hover:bg-white/50 dark:hover:bg-gray-700/50'
+                  ? 'bg-gradient-to-r from-purple-500 to-blue-600 text-white shadow-lg'
+                  : 'text-gray-600 dark:text-gray-400 hover:bg-white/50 dark:hover:bg-gray-700/50'
                   }`}
               >
                 {range.charAt(0).toUpperCase() + range.slice(1)}

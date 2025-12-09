@@ -4,12 +4,20 @@ import axios from "axios";
 const isLocalhost = typeof window !== "undefined" && window.location.hostname === "localhost";
 
 const resolveBackendBase = () => {
-  const raw = import.meta.env.VITE_API_URL;
+  let raw = import.meta.env.VITE_API_URL;
+
+  if (!raw && typeof window !== "undefined") {
+    raw = window.location.origin;
+  }
+
   if (!raw) return "";
+
   let base = raw.replace(/\/+$/, "");
+
   if (base.endsWith("/api")) {
     base = base.slice(0, -4);
   }
+
   return base;
 };
 
@@ -20,7 +28,7 @@ export const dashboardAPI = axios.create({
     ? "http://localhost:5000/api/admin"
     : backendBase
       ? `${backendBase}/api/admin`
-      : "http://localhost:5000/api/admin",
+      : "",
   withCredentials: true,
 });
 
